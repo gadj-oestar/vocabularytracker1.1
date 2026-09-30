@@ -1,26 +1,42 @@
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
+import AuthPage from './components/AuthPage'
 import SearchForm from './components/SearchForm'
 import NewWordCard from './components/NewWordCard'
 import KnownWordCard from './components/KnownWordCard'
 import RecentWords from './components/RecentWords'
 import WordsPage from './components/WordsPage'
 import WordDetail from './components/WordDetail'
-import { createWord, deleteWord, listWords, lookupWord, updateWord } from './api'
+import {
+  createWord,
+  deleteWord,
+  getMe,
+  listWords,
+  login,
+  logout,
+  lookupWord,
+  register,
+  updateWord,
+} from './api'
 import './App.css'
 
 // App = le "chef d'orchestre" : c'est ici qu'on garde les données
-// et qu'on décide quoi afficher. Les données viennent maintenant du SERVEUR (base PostgreSQL) :
-// App les demande au démarrage, puis envoie chaque action (chercher, enregistrer, modifier, supprimer).
+// et qu'on décide quoi afficher. Les données viennent du SERVEUR (base PostgreSQL) :
+// App vérifie d'abord si on est connecté, puis demande les mots, puis envoie chaque action.
 export default function App() {
+  // user : la personne connectée.
+  //   undefined  -> on ne sait pas encore (vérification en cours au démarrage)
+  //   null       -> personne n'est connecté : on affiche l'écran de connexion
+  //   { id, email } -> connecté : on affiche l'appli
+  const [user, setUser] = useState(undefined)
   // words : le carnet (liste de tous les mots enregistrés), copie locale de ce que dit le serveur
   const [words, setWords] = useState([])
-  // loading : true tant que le premier chargement n'est pas terminé
+  // loading : true tant que la vérification de session et le premier chargement ne sont pas terminés
   const [loading, setLoading] = useState(true)
   // error : un message d'erreur à afficher (serveur éteint, mot déjà enregistré...), ou null
   const [error, setError] = useState(null)
-  // loadFailed : true si le carnet n'a pas pu être chargé (ex. serveur éteint) : on propose alors "Réessayer"
+  // loadFailed : true si le démarrage a échoué (ex. serveur éteint) : on propose alors "Réessayer"
   const [loadFailed, setLoadFailed] = useState(false)
   // searching : true pendant qu'on attend la réponse du serveur à une recherche
   const [searching, setSearching] = useState(false)
@@ -38,22 +54,30 @@ export default function App() {
   // ainsi la fiche montre toujours la version à jour (après une modification, par exemple).
   const selectedWord = words.find((w) => w.termNormalized === selectedKey)
 
-  // useEffect : "fais ceci APRÈS l'affichage". Avec [] en second argument, ça ne s'exécute qu'une fois,
-  // au démarrage : c'est le moment de demander les mots au serveur.
+  // Démarrage : "suis-je connecté ?" ; si oui, on charge le carnet. Renvoie l'utilisateur et ses mots.
+  // (Le cookie de session est envoyé automatiquement par le navigateur : on n'a rien à lui donner.)
+  async function startSession() {
+    const me = await getMe()
+    return { me, loaded: me ? await listWords() : [] }
+  }
+
+  // useEffect : "fais ceci APRÈS l'affichage". Avec [] en second argument, ça ne s'exécute qu'une fois, au démarrage.
   // (loading vaut déjà true au départ, inutile de le remettre à true ici.)
   useEffect(() => {
     // cancelled : si le composant disparaît avant la réponse du serveur, on ignore la réponse
     // (React en mode développement monte l'appli deux fois : sans ça, on traiterait deux réponses).
     let cancelled = false
-    listWords()
-      .then((loaded) => {
-        if (!cancelled) setWords(loaded)
+    startSession()
+      .then(({ me, loaded }) => {
+        if (cancelled) return
+        setUser(me)
+        setWords(loaded)
       })
       .catch((e) => {
-        if (!cancelled) {
-          setError(e.message)
-          setLoadFailed(true)
-        }
+        if (cancelled) return
+        setUser(null)
+        setError(e.message)
+        setLoadFailed(true)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -63,19 +87,67 @@ export default function App() {
     }
   }, [])
 
-  // Bouton "Réessayer" : refait le même chargement quand le premier a échoué.
+  // Bouton "Réessayer" : refait le même démarrage quand le premier a échoué.
   async function handleRetry() {
     setLoading(true)
     setError(null)
     setLoadFailed(false)
     try {
-      setWords(await listWords())
+      const { me, loaded } = await startSession()
+      setUser(me)
+      setWords(loaded)
     } catch (e) {
       setError(e.message)
       setLoadFailed(true)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Remet l'appli dans l'état "personne connecté" : on oublie le carnet et tout ce qui était affiché.
+  // Important : le carnet d'une personne ne doit JAMAIS rester en mémoire quand une autre se connecte.
+  function clearSession() {
+    setUser(null)
+    setWords([])
+    setResult(null)
+    setSelectedKey(null)
+    setScreen('add')
+  }
+
+  // Gère une erreur venue du serveur. Un 401 en cours d'utilisation veut dire que la session a expiré
+  // (ou que le compte a disparu) : on renvoie vers l'écran de connexion au lieu d'afficher une erreur confuse.
+  function fail(e) {
+    if (e.status === 401) {
+      clearSession()
+      setError('Ta session a expiré. Reconnecte-toi.')
+    } else {
+      setError(e.message)
+    }
+  }
+
+  // Appelée par AuthPage quand on valide le formulaire. Renvoie un message d'erreur si ça a échoué
+  // (AuthPage l'affiche dans le formulaire), sinon rien.
+  async function handleAuth(mode, email, password) {
+    setError(null)
+    try {
+      const me = mode === 'register' ? await register(email, password) : await login(email, password)
+      setWords(await listWords()) // le carnet de CETTE personne
+      setUser(me)
+      return undefined
+    } catch (e) {
+      return e.message
+    }
+  }
+
+  // Appelée par le bouton "Déconnexion".
+  async function handleLogout() {
+    try {
+      await logout()
+    } catch (e) {
+      setError(e.message)
+      return // si le serveur n'a pas pu effacer la session, on reste connecté plutôt que de faire semblant
+    }
+    clearSession()
   }
 
   // Remplace un mot dans le carnet (ou l'ajoute en tête s'il n'y est pas encore).
@@ -100,7 +172,7 @@ export default function App() {
         setResult({ type: 'new', draft: data.draft, unavailable: data.unavailable })
       }
     } catch (e) {
-      setError(e.message)
+      fail(e)
     } finally {
       setSearching(false) // quoi qu'il arrive (succès ou erreur), la recherche est terminée
     }
@@ -115,7 +187,7 @@ export default function App() {
       setResult(null) // on efface la fiche : prêt pour le mot suivant
     } catch (e) {
       // Ex. 409 "Ce mot est déjà enregistré" : la base a refusé le doublon. La fiche reste affichée.
-      setError(e.message)
+      fail(e)
     }
   }
 
@@ -128,7 +200,7 @@ export default function App() {
       setResult(null) // la fiche de l'écran "Ajouter" montrerait l'ancienne version
       return true
     } catch (e) {
-      setError(e.message)
+      fail(e)
       return false
     }
   }
@@ -144,7 +216,7 @@ export default function App() {
       setResult(null)
       setScreen('list') // retour à la liste
     } catch (e) {
-      setError(e.message)
+      fail(e)
     }
   }
 
@@ -165,7 +237,7 @@ export default function App() {
   const errorBanner = error && (
     <div className="error-banner" role="alert">
       <span>{error}</span>
-      {/* Carnet non chargé : "Réessayer" relance le chargement. Sinon on peut juste fermer le message. */}
+      {/* Démarrage raté : "Réessayer" relance le démarrage. Sinon on peut juste fermer le message. */}
       {loadFailed ? (
         <button type="button" className="link-button" onClick={handleRetry}>
           Réessayer
@@ -178,17 +250,35 @@ export default function App() {
     </div>
   )
 
-  // Pendant le premier chargement, on n'affiche qu'un message d'attente
-  let content
+  // Pendant la vérification de session et le premier chargement, on n'affiche qu'un message d'attente
   if (loading) {
-    content = (
-      <main className="main main--single">
-        <p className="loading" role="status">
-          Chargement de ton carnet…
-        </p>
-      </main>
+    return (
+      <div className="app app--auth">
+        <Header />
+        <main className="main main--single">
+          <p className="loading" role="status">
+            Chargement…
+          </p>
+        </main>
+      </div>
     )
-  } else if (screen === 'add') {
+  }
+
+  // Personne n'est connecté : écran de connexion, SANS la barre de navigation
+  if (!user) {
+    return (
+      <div className="app app--auth">
+        <Header />
+        <main className="main main--single">
+          {errorBanner}
+          <AuthPage onSubmit={handleAuth} />
+        </main>
+      </div>
+    )
+  }
+
+  let content
+  if (screen === 'add') {
     content = (
       <main className="main">
         {errorBanner}
@@ -237,7 +327,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header user={user} onLogout={handleLogout} />
       {content}
       {/* Pendant qu'on regarde une fiche, l'onglet "Mes mots" reste allumé : la fiche en fait partie */}
       <BottomNav screen={screen === 'detail' ? 'list' : screen} onNavigate={handleNavigate} />

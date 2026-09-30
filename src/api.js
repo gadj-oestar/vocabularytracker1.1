@@ -71,6 +71,37 @@ function toApi(word) {
   }
 }
 
+// --- Compte et session ---------------------------------------------------------------------
+// La session est un cookie que le serveur dépose à la connexion. Il est "httpOnly" : notre code
+// JavaScript ne le voit jamais (c'est voulu, pour qu'un script malveillant ne puisse pas le voler).
+// Le navigateur le renvoie tout seul à chaque requête : on n'a rien à gérer ici.
+
+// "Suis-je connecté ?" : renvoie l'utilisateur, ou null si on n'est pas connecté.
+// Un 401 n'est pas une erreur ici, c'est juste la réponse "non" : c'est l'état normal quand on arrive sur le site.
+export async function getMe() {
+  try {
+    return (await request('GET', '/auth/me')).user
+  } catch (error) {
+    if (error.status === 401) return null
+    throw error // autre problème (serveur injoignable...) : on le signale
+  }
+}
+
+// Crée un compte (on est connecté directement après)
+export async function register(email, password) {
+  return (await request('POST', '/auth/register', { email, password })).user
+}
+
+// Se connecte avec un e-mail et un mot de passe
+export async function login(email, password) {
+  return (await request('POST', '/auth/login', { email, password })).user
+}
+
+// Se déconnecte : le serveur efface le cookie
+export async function logout() {
+  await request('POST', '/auth/logout')
+}
+
 // --- Les actions disponibles ---------------------------------------------------------------
 
 // Tous les mots du carnet (du plus récent au plus ancien)

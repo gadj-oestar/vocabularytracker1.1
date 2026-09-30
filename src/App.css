@@ -17,9 +17,71 @@
 
 /* ===== Bandeau du haut ===== */
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 20px 20px 14px;
   background: var(--yellow);
   border-bottom: 3px solid var(--ink);
+}
+
+/* Zone "utilisateur connecté" : pastille avec les initiales + bouton Déconnexion.
+   Sur téléphone on garde la version compacte (l'e-mail est caché, il reste en infobulle). */
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.user-pill {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+.user-email {
+  display: none;
+}
+.user .link-button {
+  font-size: 12px;
+}
+
+/* ===== Écran de connexion / création de compte ===== */
+.auth {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.auth-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 400;
+}
+.auth-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--grey);
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--grey);
+}
+.form-error {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--danger);
+  background: var(--paper);
+  border: 2px solid var(--danger);
+  border-radius: 10px;
+}
+.auth-switch {
+  align-self: center;
 }
 
 .logo {
@@ -539,10 +601,54 @@
   /* Le logo et la navigation forment ensemble le menu jaune de gauche */
   .header {
     grid-area: header;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
     padding: 28px 20px 0;
     background: var(--yellow);
     border-bottom: 0;
     border-right: 3px solid var(--ink);
+  }
+
+  /* Dans le menu de gauche : l'e-mail en entier (tronqué avec "…" s'il est long), sans la pastille */
+  .user {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .user-pill {
+    display: none;
+  }
+  .user-email {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .user .link-button {
+    font-size: 13px;
+  }
+
+  /* Écran de connexion (pas de menu) : on revient à une simple barre jaune en haut, sur une colonne */
+  .app--auth {
+    display: flex;
+    flex-direction: column;
+  }
+  .app--auth .header {
+    flex-direction: row;
+    align-items: center;
+    padding: 20px;
+    border-right: 0;
+    border-bottom: 3px solid var(--ink);
+  }
+  .app--auth .logo {
+    font-size: 22px;
+    transform: rotate(-2deg);
+  }
+  .app--auth .main {
+    padding-top: 48px;
   }
   .logo {
     font-size: 26px;
