@@ -258,3 +258,51 @@ npx prisma migrate deploy
 npm run dev              # le serveur écoute sur http://localhost:3001
 npm test                 # les tests (la base doit tourner)
 ```
+
+---
+
+# Étape 4 du plan : brancher les API externes
+
+Le serveur va chercher lui-même la définition, la nature du mot et un exemple auprès de sites de dictionnaire. **Le navigateur n'appelle jamais ces API** : ça protège les clés secrètes (DeepL, prochaine mise à jour) et ça permet de gérer les pannes au même endroit.
+
+## Mise à jour 4a : le dictionnaire
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `server/src/services/dictionary.js` | Interroge deux dictionnaires en parallèle et fusionne leurs réponses. |
+| `server/test/dictionary.test.js` | Teste ce service avec de **faux** dictionnaires : pas d'internet nécessaire. |
+
+**Deux sources, pourquoi ?** Le cahier des charges prévoit la *Free Dictionary API*, qui donne la phonétique. Le jour du test, elle était en panne (erreur **522**, côté leur serveur). J'ai ajouté **Wiktionary** (gratuit, sans clé) : il connaît aussi les expressions comme « give up », très fréquentes dans les manhwa. Chaque champ est pris dans la première source qui l'a.
+
+## Les fonctions créées
+
+**`cleanHtml(html)`** — *Transforme du HTML en texte simple.* Wiktionary renvoie `<a href=…>Careless</a> or <b>rash</b>` ; on garde `Careless or rash`. Elle supprime aussi les blocs `<style>` **avec leur contenu** : un vrai bug trouvé en testant « no way », dont la définition contenait du code CSS.
+
+**`parseFreeDictionary(json)` / `parseWiktionary(json)`** — *Lisent la réponse d'un site* et en sortent toujours la même forme : `{ partOfSpeech, phonetic, definition, example }`. La nature du mot est traduite en français (`adjective` → `adjectif`). Les deux sites répondent dans des formats différents, ces fonctions les rendent interchangeables.
+
+**`mergeInfo(...infos)`** — *Fusionne les sources* champ par champ : la première qui a une valeur gagne.
+
+**`createDictionaryClient(...)` et `lookup(term)`** — *Interrogent les deux sites en même temps* (`Promise.all`). Trois protections :
+- **Délai maximum de 3 secondes** : un site lent ne bloque pas l'appli.
+- **Échec d'une source** : on continue avec l'autre. Si les deux échouent, on renvoie des champs vides et la réponse contient `unavailable: ['dictionary']` : le mot peut quand même être enregistré (règle « échec d'API »).
+- **Disjoncteur** : après un échec, la source est mise de côté 1 minute. Sans ça, avec un site en panne, *chaque* nouveau mot attendrait 3 secondes pour rien. (On l'a vu : le premier mot a pris 3,4 s, les suivants 40 ms.)
+
+**`encodeURIComponent(term)`** — *Protège l'adresse* : le mot tapé par l'utilisateur est inséré dans une URL, donc `a/../b?x=1` ne peut pas en changer la destination.
+
+## Pourquoi un « faux fetch » dans les tests ?
+
+Un test qui dépend d'internet échoue quand le site est en panne, alors que notre code est bon. Dans les tests, on remplace `fetch` (la fonction qui appelle internet) par un faux qui répond ce qu'on veut, y compris des pannes. Les tests sont alors rapides, fiables, et peuvent simuler des cas qu'on ne peut pas provoquer en vrai (erreur 522, réseau coupé).
+
+## Résultat réel (mots de la maquette)
+
+| Mot | Nature | Définition (début) |
+| --- | --- | --- |
+| reckless | adjectif | Careless or heedless; headstrong or rash. |
+| give up | verbe | To surrender ; to inform on (someone). |
+| grudge | nom | Deep-seated and/or long-term animosity… |
+| no way | adverbe | In no way; not at all; under no circumstances. |
+
+## Ce qui n'est pas encore fait
+
+- La **traduction** française (DeepL), qui demande une clé d'API.
+- Brancher le front sur l'API.

@@ -8,6 +8,7 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { normalizeTerm } from '../utils/normalize.js'
+import { dictionary } from '../services/dictionary.js'
 import { HttpError, cleanTerm, cleanWordFields } from '../utils/wordInput.js'
 
 const router = Router()
@@ -50,21 +51,27 @@ router.post('/lookup', async (req, res) => {
     return res.json({ status: 'known', word })
   }
 
-  // Nouveau mot : pour l'instant un brouillon vide (les API de traduction arrivent à l'étape 4 du plan).
+  // Nouveau mot : on demande la définition, la nature et un exemple aux dictionnaires (étape 4 du plan).
+  // Le navigateur n'appelle JAMAIS ces API lui-même : c'est le serveur qui le fait.
+  const { info, available } = await dictionary.lookup(normalizeTerm(term))
+
   res.json({
     status: 'new',
     draft: {
       term,
       termNormalized,
-      translation: '',
-      partOfSpeech: '',
-      phonetic: '',
-      definition: '',
-      example: '',
+      translation: '', // rempli par DeepL dans la mise à jour suivante
+      partOfSpeech: info.partOfSpeech,
+      phonetic: info.phonetic,
+      definition: info.definition,
+      example: info.example,
       sourceTitle: null,
       sourceChapter: null,
       sourceSentence: null,
     },
+    // Ce qui n'a pas pu être obtenu : le front peut le dire à l'utilisateur ("à compléter toi-même").
+    // RÈGLE "échec d'API" : ce n'est pas une erreur, le mot peut quand même être enregistré.
+    unavailable: available ? [] : ['dictionary'],
   })
 })
 

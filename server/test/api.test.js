@@ -21,13 +21,33 @@ async function call(method, path, body) {
   return { status: response.status, body: text ? JSON.parse(text) : null }
 }
 
+const realFetch = globalThis.fetch
+
 before(() => {
+  // Les appels vers les API de dictionnaire sont interceptés : le test ne dépend pas d'internet
+  // (et ne risque pas d'échouer si une API est en panne). Tout le reste passe normalement.
+  globalThis.fetch = (url, options) => {
+    const address = String(url)
+    if (address.includes('dictionaryapi.dev')) {
+      return Promise.resolve(Response.json({ title: 'No Definitions Found' }, { status: 404 }))
+    }
+    if (address.includes('wiktionary.org')) {
+      return Promise.resolve(
+        Response.json({
+          en: [{ partOfSpeech: 'Noun', definitions: [{ definition: '<b>A test</b> &amp; more.', examples: ['An <b>example</b>.'] }] }],
+        }),
+      )
+    }
+    return realFetch(url, options)
+  }
+
   // port 0 = "choisis un port libre" : le test ne gêne pas le vrai serveur
   server = app.listen(0)
   base = `http://localhost:${server.address().port}`
 })
 
 after(async () => {
+  globalThis.fetch = realFetch // on remet le vrai fetch
   // Ménage : on supprime tous les mots de test, puis on ferme serveur et connexion
   await prisma.word.deleteMany({ where: { termNormalized: { startsWith: 'zz-test' } } })
   server.close()
@@ -40,6 +60,11 @@ test('cycle complet : chercher, créer, doublon, modifier, supprimer', async () 
   assert.equal(r.status, 200)
   assert.equal(r.body.status, 'new')
   assert.equal(r.body.draft.termNormalized, TERM) // normalisé par le serveur
+  // Le brouillon est pré-rempli par le dictionnaire (ici simulé), HTML nettoyé et nature en français
+  assert.equal(r.body.draft.partOfSpeech, 'nom')
+  assert.equal(r.body.draft.definition, 'A test & more.')
+  assert.equal(r.body.draft.example, 'An example.')
+  assert.deepEqual(r.body.unavailable, [])
 
   // 2. On l'enregistre (le front envoie "42" en texte : le serveur en fait un nombre)
   r = await call('POST', '/api/words', {
