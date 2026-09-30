@@ -327,7 +327,78 @@ Un test qui dépend d'internet échoue quand le site est en panne, alors que not
 3. Ouvrez `server/.env` et mettez-la après `DEEPL_API_KEY=`. Ce fichier n'est jamais envoyé sur GitHub.
 4. Redémarrez le serveur (`npm run start` dans `server`).
 
+
+---
+
+# Brancher le front sur l'API
+
+Avant : les mots vivaient dans la mémoire du navigateur (données « en dur ») et disparaissaient au rechargement. Maintenant : le front **demande tout au serveur**, qui garde les mots dans PostgreSQL. Fermez l'onglet, redémarrez l'ordinateur : les mots sont toujours là.
+
+```
+Composants React  -->  api.js  -->  (proxy Vite)  -->  Serveur Express  -->  PostgreSQL
+  (l'écran)        (les appels)    /api -> :3001         (server/)            (les mots)
+```
+
+## Ce qui a changé
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/api.js` | **Le seul endroit** où le front parle au serveur : lire, chercher, créer, modifier, supprimer. |
+| `vite.config.js` | Le **proxy** : Vite relaie les adresses `/api/...` vers le serveur (port 3001). |
+| `src/App.jsx` | Charge les mots au démarrage, envoie chaque action au serveur, affiche les erreurs. |
+| `package.json` | Deux commandes en plus : `dev:all` (tout lancer) et `install:all` (tout installer). |
+| `README.md` | Un vrai mode d'emploi du projet (à la place du texte par défaut de Vite). |
+
+Supprimés : `src/data/initialWords.js` et `src/data/fakeDictionary.js` (les données en dur, devenues inutiles).
+
+## Les fonctions et notions nouvelles
+
+**`request(method, path, body)`** (dans `api.js`) — *Envoie une requête au serveur et décode la réponse.* Toutes les autres fonctions l'utilisent. Elle transforme les problèmes en `ApiError` avec un message lisible, que l'écran affiche tel quel.
+
+**`fromApi(word)`** — *Traduit un mot du format serveur vers le format du front.* Le serveur dit `null` pour « pas renseigné » et un **nombre** pour le chapitre ; les champs de formulaire veulent du **texte**. On convertit une seule fois, à l'entrée, et le reste de l'appli ne voit que des textes.
+
+**`listWords`, `lookupWord`, `createWord`, `updateWord`, `deleteWord`** — *Les 5 actions possibles.* Chacune correspond à une route du serveur. Les composants n'appellent jamais `fetch` eux-mêmes.
+
+**`async` / `await`** — Une action qui attend le serveur est *asynchrone* : `await` veut dire « attends la réponse avant de continuer ». Pendant l'attente, l'écran reste utilisable.
+
+**`useEffect`** (dans `App.jsx`) — *« Fais ceci APRÈS l'affichage ».* Avec `[]`, il ne s'exécute qu'une fois, au démarrage : c'est là qu'on demande les mots au serveur. Sa fonction de nettoyage (`cancelled = true`) évite de traiter une réponse arrivée trop tard.
+
+**`loading`, `error`, `searching`** — Trois petites « mémoires » pour ce qu'on affiche *pendant* qu'on attend : « Chargement de ton carnet… », un bandeau rouge si ça échoue, un bouton GO grisé pendant une recherche (pour ne pas envoyer deux fois la même).
+
+**`putWord(word)`** — *Met à jour le carnet local* : remplace le mot s'il y est, l'ajoute en tête sinon.
+
+**Le proxy** — Le front (port 5173) et le serveur (port 3001) sont deux programmes séparés, donc deux « sites » pour le navigateur, qui bloque par sécurité les appels de l'un à l'autre (CORS). Avec le proxy, le navigateur croit parler à un seul site : les appels `/api/...` sont relayés par Vite.
+
+## Ce que l'utilisateur voit quand quelque chose ne va pas
+
+| Situation | Ce qui s'affiche |
+| --- | --- |
+| Serveur éteint au démarrage | « Impossible de joindre le serveur. Est-il démarré ? » + bouton **Réessayer** |
+| Serveur éteint pendant l'usage | Le même message, avec **Fermer** |
+| Mot déjà enregistré (doublon refusé par la base) | « Ce mot est déjà enregistré. » |
+| Trop de recherches (plus de 30 par minute) | « Trop de recherches. Réessaie dans une minute. » |
+| Traduction ou définition indisponible | Un petit encadré en pointillés : « … complète-la toi-même », le mot reste enregistrable |
+| Modification refusée | Le formulaire **reste ouvert** : ce qu'on a tapé n'est pas perdu |
+
+## Deux défauts trouvés et corrigés en testant pour de vrai
+
+1. **Message d'erreur faux** : serveur éteint, l'écran disait « Erreur du serveur. » au lieu de « Impossible de joindre le serveur ». En développement, le proxy de Vite répond lui-même par une erreur 500 *sans contenu*. Or notre serveur répond *toujours* en JSON : une erreur sans JSON vient forcément d'un intermédiaire.
+2. **Nature du mot invisible** : la ligne « phonétique · nature » ne s'affichait que s'il y avait une phonétique, or Wiktionary n'en donne pas. Elle s'affiche maintenant dès qu'au moins un des deux existe.
+
+## Comment lancer et tester
+
+```bash
+npm run install:all    # une seule fois
+npm run dev:all        # front sur http://localhost:5173, serveur sur http://localhost:3001
+```
+
+1. Tape `reckless` : une définition apparaît (l'avertissement « traduction indisponible » tant qu'il n'y a pas de clé DeepL).
+2. Complète la traduction, **ENREGISTRER**, puis **recharge la page** : le mot est toujours là.
+3. Retape ` RECKLESS ` : « Déjà dans ton carnet », le compteur monte à ×2.
+4. Coupe le serveur (`Ctrl+C`) et tape un mot : le message d'erreur s'affiche.
+
 ## Ce qui n'est pas encore fait
 
-- **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, mais pas encore contre le vrai service.
-- **Brancher le front sur l'API** : le front utilise encore ses données en dur.
+- **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, pas encore contre le vrai service.
+- **L'authentification** (étape 5 du plan) : en attendant, le serveur simule un utilisateur de développement. N'importe qui qui atteint le serveur voit ce carnet.
+- Le **déploiement en ligne**.
