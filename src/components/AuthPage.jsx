@@ -10,6 +10,9 @@ export default function AuthPage({ onSubmit }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false) // true pendant qu'on attend le serveur : on bloque le bouton
+  // showPassword : le mot de passe est-il affiché en clair ? Masqué par défaut : quelqu'un qui regarde l'écran
+  // par-dessus votre épaule ne doit rien voir tant que vous ne l'avez pas demandé.
+  const [showPassword, setShowPassword] = useState(false)
 
   const isRegister = mode === 'register'
 
@@ -31,6 +34,7 @@ export default function AuthPage({ onSubmit }) {
   function switchMode() {
     setMode(isRegister ? 'login' : 'register')
     setError(null)
+    setShowPassword(false) // on repart toujours avec le mot de passe masqué
   }
 
   return (
@@ -55,19 +59,69 @@ export default function AuthPage({ onSubmit }) {
           />
         </label>
 
-        <label className="field">
-          <span className="field-label">Mot de passe</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            // "new-password" à l'inscription : le navigateur propose d'en générer un solide
-            autoComplete={isRegister ? 'new-password' : 'current-password'}
-            minLength={isRegister ? 8 : undefined}
-            required
-          />
+        {/* Ici le label est lié au champ par htmlFor/id (et non en l'entourant) : le bouton "œil" placé
+            à côté ne doit pas faire partie du nom du champ pour les lecteurs d'écran. */}
+        <div className="field">
+          <label className="field-label" htmlFor="password">
+            Mot de passe
+          </label>
+          <div className="password-wrap">
+            <input
+              id="password"
+              // type="text" montre le mot de passe en clair, type="password" le cache sous des points
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              // "new-password" à l'inscription : le navigateur propose d'en générer un solide
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              // Mot de passe visible = simple texte pour le navigateur : on coupe le correcteur orthographique
+              // (qui pourrait envoyer ce texte à un service en ligne) et les majuscules/corrections automatiques.
+              spellCheck={false}
+              autoCapitalize="none"
+              autoCorrect="off"
+              minLength={isRegister ? 8 : undefined}
+              required
+            />
+            <button
+              className="password-toggle"
+              type="button"
+              // aria-label : un bouton avec seulement une icône a besoin d'un nom pour les lecteurs d'écran.
+              // aria-pressed : indique si le bouton est "enfoncé" (mot de passe affiché).
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {showPassword ? (
+                  // œil barré : "cliquer pour masquer"
+                  <>
+                    <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a19.77 19.77 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a19.86 19.86 0 0 1-3.17 4.19" />
+                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                    <path d="M1 1l22 22" />
+                  </>
+                ) : (
+                  // œil ouvert : "cliquer pour afficher"
+                  <>
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                )}
+              </svg>
+            </button>
+          </div>
           {isRegister && <span className="field-hint">8 caractères minimum.</span>}
-        </label>
+        </div>
 
         {/* Message du serveur (ex. "E-mail ou mot de passe incorrect."). role="alert" : annoncé aux lecteurs d'écran. */}
         {error && (

@@ -477,6 +477,29 @@ Supprimé : `server/src/devUser.js` (l'utilisateur factice provisoire).
 4. Cliquez sur **Déconnexion**, puis reconnectez-vous.
 5. Créez un second compte : son carnet est vide, il ne voit pas les mots du premier.
 
+## Améliorations de l'interface : voir son mot de passe, carte du compte
+
+### Afficher / masquer le mot de passe (`AuthPage.jsx`)
+
+**`showPassword`** — *Une petite mémoire « le mot de passe est-il visible ? »*, à `false` au départ. Le bouton « œil » la bascule, et le champ change de `type` : `password` (des points) ou `text` (en clair). Elle repasse à `false` quand on change de formulaire (connexion / inscription) : on repart toujours masqué.
+
+**Ce qui est fait pour l'accessibilité :**
+- `aria-label` : un bouton qui n'a qu'une icône a besoin d'un nom pour les lecteurs d'écran (« Afficher le mot de passe » / « Masquer le mot de passe »).
+- `aria-pressed` : dit si le bouton est « enfoncé ». Il devient aussi bleu à l'écran, pour voir l'état d'un coup d'œil.
+- Le `label` est lié au champ par `htmlFor` / `id`, au lieu de l'entourer : sinon le texte du bouton aurait fait partie du nom du champ.
+
+**Ce qui est fait pour la sécurité :** un mot de passe affiché est, pour le navigateur, un simple texte. On coupe donc `spellCheck` (le correcteur orthographique de certains navigateurs envoie le texte à un service en ligne), `autoCapitalize` et `autoCorrect`.
+
+### La carte du compte connecté (`Header.jsx`)
+
+| | Téléphone | Ordinateur |
+| --- | --- | --- |
+| Avatar | Rond bleu avec les initiales et un voyant vert « en ligne » | Pareil |
+| « Connecté » + e-mail | Cachés (l'e-mail reste en infobulle) | Affichés dans une carte blanche, e-mail tronqué par « … » s'il est long |
+| Déconnexion | Bouton rond avec une icône | Bouton pleine largeur « Déconnexion » avec son icône |
+
+Le même composant sert aux deux : c'est le CSS (`@media`) qui change la présentation. Le texte « Connecté en tant que … » est présent en permanence pour les lecteurs d'écran (classe `sr-only`), même quand il est caché à l'écran. Le vert du petit texte « CONNECTÉ » est une version plus foncée du vert du voyant, pour rester lisible en petite taille.
+
 ## Ce qui n'est pas encore fait
 
 - **Le déploiement en ligne** : il faudra HTTPS (le cookie passera alors en mode `Secure`), un vrai `JWT_SECRET` propre à l'hébergement, et sans doute régler `trust proxy` pour que la limite de tentatives repère la bonne adresse IP.

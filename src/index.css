@@ -7,6 +7,8 @@
   --white: #ffffff;
   --grey: #4a4a4a;
   --danger: #b3261e;
+  --green: #1e9e5a; /* le voyant "en ligne" */
+  --green-dark: #14673b; /* la même couleur, assez foncée pour être lisible en petit texte */
   --font-title: 'Dela Gothic One', sans-serif;
   --font-text: 'Work Sans', system-ui, sans-serif;
 }

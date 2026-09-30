@@ -26,27 +26,65 @@
   border-bottom: 3px solid var(--ink);
 }
 
-/* Zone "utilisateur connecté" : pastille avec les initiales + bouton Déconnexion.
-   Sur téléphone on garde la version compacte (l'e-mail est caché, il reste en infobulle). */
+/* Zone "compte connecté". Sur téléphone : version compacte = un avatar rond + un bouton de sortie rond
+   (l'e-mail et le mot "Connecté" sont cachés, l'e-mail reste en infobulle). */
 .user {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  align-items: center;
+  gap: 10px;
 }
-.user-pill {
-  padding: 4px 10px;
-  font-size: 13px;
-  font-weight: 700;
-  background: var(--paper);
+/* L'avatar : les initiales dans un rond bleu, contour épais et ombre décalée comme le reste de l'appli */
+.user-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  font-family: var(--font-title);
+  font-size: 15px;
+  color: var(--white);
+  background: var(--blue);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+/* Le petit voyant vert "en ligne" en bas à droite de l'avatar */
+.user-dot {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  background: var(--green);
   border: 2px solid var(--ink);
-  border-radius: 999px;
+  border-radius: 50%;
 }
-.user-email {
+.user-info {
   display: none;
 }
-.user .link-button {
-  font-size: 12px;
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  font: 700 14px var(--font-text);
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.logout-btn:hover {
+  color: var(--danger);
+  background: var(--paper);
+}
+.logout-label {
+  display: none;
 }
 
 /* ===== Écran de connexion / création de compte ===== */
@@ -65,6 +103,36 @@
   margin: 0;
   font-size: 14px;
   color: var(--grey);
+}
+/* Champ mot de passe : le bouton "œil" est posé par-dessus la droite du champ */
+.password-wrap {
+  position: relative;
+  display: flex;
+}
+.password-wrap input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 52px; /* laisse la place au bouton, pour que le texte ne passe pas dessous */
+}
+.password-toggle {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+}
+.password-toggle[aria-pressed='true'] {
+  color: var(--white);
+  background: var(--blue); /* bleu quand le mot de passe est affiché : on voit d'un coup d'œil l'état */
 }
 .field-hint {
   font-size: 12px;
@@ -610,25 +678,48 @@
     border-right: 3px solid var(--ink);
   }
 
-  /* Dans le menu de gauche : l'e-mail en entier (tronqué avec "…" s'il est long), sans la pastille */
+  /* Dans le menu de gauche : une vraie carte blanche avec avatar, "Connecté", l'e-mail et le bouton en dessous */
   .user {
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: auto 1fr; /* l'avatar, puis le texte qui prend le reste */
+    gap: 12px;
     width: 100%;
+    padding: 14px;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    box-shadow: 4px 4px 0 var(--ink);
   }
-  .user-pill {
-    display: none;
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0; /* sans ça, un e-mail long empêcherait la colonne de rétrécir */
+  }
+  .user-status {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--green-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
   .user-email {
-    display: block;
-    max-width: 100%;
     overflow: hidden;
     font-size: 14px;
     font-weight: 600;
-    text-overflow: ellipsis;
+    text-overflow: ellipsis; /* un e-mail trop long finit par "…" */
     white-space: nowrap;
   }
-  .user .link-button {
-    font-size: 13px;
+  /* Le bouton de sortie passe sous l'avatar, sur toute la largeur de la carte, avec son texte */
+  .logout-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 40px;
+    border-width: 2px;
+    box-shadow: none;
+  }
+  .logout-label {
+    display: inline;
   }
 
   /* Écran de connexion (pas de menu) : on revient à une simple barre jaune en haut, sur une colonne */
