@@ -11,7 +11,8 @@ const sortOptions = [
 
 // Écran "Mes mots" : titre, recherche, filtres et liste de cartes.
 // `words` = tout le carnet, donné par App.
-export default function WordsPage({ words }) {
+// `onOpen` = fonction donnée par App : on l'appelle avec le mot cliqué pour ouvrir sa fiche.
+export default function WordsPage({ words, onOpen }) {
   // Ces deux valeurs ne concernent QUE cet écran : on les garde ici, pas dans App.
   const [query, setQuery] = useState('') // ce qui est tapé dans la recherche
   const [sort, setSort] = useState('recent') // le tri choisi
@@ -75,7 +76,12 @@ export default function WordsPage({ words }) {
             <tbody>
               {visibleWords.map((word) => (
                 <tr key={word.termNormalized}>
-                  <td className="words-table-term">{word.term}</td>
+                  <td className="words-table-term">
+                    {/* Un vrai <button> (et pas un div cliquable) : utilisable au clavier */}
+                    <button className="link-button link-button--term" type="button" onClick={() => onOpen(word)}>
+                      {word.term}
+                    </button>
+                  </td>
                   <td>{word.translation}</td>
                   {/* "—" quand le titre du manhwa n'a pas été renseigné (champ optionnel) */}
                   <td>{word.sourceTitle || '—'}</td>
@@ -95,15 +101,18 @@ export default function WordsPage({ words }) {
       {/* CARTES : visibles seulement sur téléphone */}
       <ul className="words-list">
         {visibleWords.map((word) => (
-          <li key={word.termNormalized} className="word-item">
-            <div>
-              <span className="word-term">{word.term}</span>
-              <span className="word-translation">{word.translation}</span>
-            </div>
-            {/* Le compteur est jaune à partir de 2 rencontres : le mot est à retenir en priorité */}
-            <span className={`badge badge--small ${word.seenCount > 1 ? 'badge--yellow' : ''}`}>
-              ×{word.seenCount}
-            </span>
+          <li key={word.termNormalized}>
+            {/* Toute la carte est un bouton : un clic n'importe où ouvre la fiche */}
+            <button className="word-item" type="button" onClick={() => onOpen(word)}>
+              <div>
+                <span className="word-term">{word.term}</span>
+                <span className="word-translation">{word.translation}</span>
+              </div>
+              {/* Le compteur est jaune à partir de 2 rencontres : le mot est à retenir en priorité */}
+              <span className={`badge badge--small ${word.seenCount > 1 ? 'badge--yellow' : ''}`}>
+                ×{word.seenCount}
+              </span>
+            </button>
           </li>
         ))}
       </ul>

@@ -6,6 +6,7 @@ import NewWordCard from './components/NewWordCard'
 import KnownWordCard from './components/KnownWordCard'
 import RecentWords from './components/RecentWords'
 import WordsPage from './components/WordsPage'
+import WordDetail from './components/WordDetail'
 import { initialWords } from './data/initialWords'
 import { fakeDictionary } from './data/fakeDictionary'
 import { normalizeTerm } from './utils/normalize'
@@ -21,8 +22,20 @@ export default function App() {
   //   { type: 'known', word }    -> mot déjà enregistré
   //   { type: 'new', draft }     -> nouveau mot à compléter puis enregistrer
   const [result, setResult] = useState(null)
-  // screen : l'écran affiché. 'add' = Ajouter un mot, 'list' = Mes mots.
+  // screen : l'écran affiché. 'add' = Ajouter un mot, 'list' = Mes mots, 'detail' = fiche d'un mot.
   const [screen, setScreen] = useState('add')
+  // selectedKey : quel mot est ouvert dans la fiche (on retient son termNormalized, l'identifiant du mot)
+  const [selectedKey, setSelectedKey] = useState(null)
+
+  // Le mot ouvert, retrouvé dans le carnet à chaque affichage. On ne stocke pas une copie du mot :
+  // ainsi la fiche montre toujours la version à jour (après une modification, par exemple).
+  const selectedWord = words.find((w) => w.termNormalized === selectedKey)
+
+  // Appelée quand on clique sur un mot de la liste.
+  function handleOpen(word) {
+    setSelectedKey(word.termNormalized)
+    setScreen('detail')
+  }
 
   // Appelée par SearchForm quand on valide un mot.
   function handleSearch(rawTerm) {
@@ -59,6 +72,25 @@ export default function App() {
     })
   }
 
+  // Appelée quand on enregistre une modification (F9).
+  function handleUpdate(updatedWord) {
+    // .map parcourt le carnet : on remplace le mot modifié (repéré par son identifiant)
+    // et on laisse tous les autres tels quels.
+    setWords(words.map((w) => (w.termNormalized === updatedWord.termNormalized ? updatedWord : w)))
+    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface : il montrerait l'ancienne version
+    setResult(null)
+  }
+
+  // Appelée quand on confirme la suppression d'un mot (F9).
+  function handleDelete(word) {
+    // .filter garde tous les mots SAUF celui-là : on fabrique un nouveau carnet, sans modifier l'ancien
+    setWords(words.filter((w) => w.termNormalized !== word.termNormalized))
+    setSelectedKey(null)
+    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface aussi : il n'existe plus
+    setResult(null)
+    setScreen('list') // retour à la liste
+  }
+
   // Appelée par le bouton ENREGISTRER.
   function handleSave() {
     const newWord = {
@@ -93,12 +125,25 @@ export default function App() {
 
           <RecentWords words={words} onSeeAll={() => setScreen('list')} />
         </main>
+      ) : screen === 'detail' && selectedWord ? (
+        <main className="main main--single">
+          <WordDetail
+            // key : quand on ouvre un AUTRE mot, React repart d'un composant neuf
+            // (sinon la question "Supprimer ?" pourrait rester affichée d'une fiche à l'autre)
+            key={selectedWord.termNormalized}
+            word={selectedWord}
+            onBack={() => setScreen('list')}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+          />
+        </main>
       ) : (
         <main className="main main--single">
-          <WordsPage words={words} />
+          <WordsPage words={words} onOpen={handleOpen} />
         </main>
       )}
-      <BottomNav screen={screen} onNavigate={setScreen} />
+      {/* Pendant qu'on regarde une fiche, l'onglet "Mes mots" reste allumé : la fiche en fait partie */}
+      <BottomNav screen={screen === 'detail' ? 'list' : screen} onNavigate={setScreen} />
     </div>
   )
 }

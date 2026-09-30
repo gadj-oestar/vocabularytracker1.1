@@ -118,8 +118,61 @@ Petit détail : quand le titre du manhwa n'est pas renseigné (champ optionnel),
 3. Clique sur **A-Z**, puis **Les plus vus** : l'ordre change.
 4. Tape `zzz` → « Aucun mot trouvé ».
 
-## Ce qui n'est pas encore fait
+---
 
-- La fiche d'un mot avec Modifier / Supprimer.
+# Étape 3 : la fiche d'un mot
+
+## 3a. Ouvrir la fiche depuis la liste
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/components/WordDetail.jsx` | L'écran « fiche d'un mot » : un bouton de retour et la fiche. |
+
+`KnownWordCard.jsx` est **réutilisé** : on lui ajoute `showBanner` pour cacher le bandeau bleu quand on ouvre la fiche au lieu de retaper le mot. On écrit une fois, on réutilise deux fois.
+
+**`handleOpen(word)`** (dans `App.jsx`) — *Ouvre la fiche d'un mot.* Elle retient lequel (`selectedKey`) et passe à l'écran `'detail'`.
+
+**`selectedWord`** — *Retrouve le mot ouvert dans le carnet* à chaque affichage, au lieu d'en garder une copie. Ainsi la fiche est toujours à jour (important pour Modifier, à l'étape suivante).
+
+**`onOpen` / `onBack`** — Les cartes de la liste sont maintenant des `<button>` : un clic appelle `onOpen(word)`, donc remonte jusqu'à `App`. Le bouton « Retour » appelle `onBack`. C'est le même principe qu'avant : les données descendent, les actions remontent.
+
+**Le champ « Vu dans »** — Il n'apparaît que si un titre de manhwa a été saisi. `{word.sourceTitle && (...)}` veut dire : « si le titre existe, affiche ce bloc, sinon n'affiche rien ».
+
+Pendant qu'on regarde une fiche, l'onglet « Mes mots » reste allumé : la fiche fait partie de cette section.
+
+## 3b. Supprimer un mot (avec confirmation)
+
+**`handleDelete(word)`** (dans `App.jsx`) — *Supprime vraiment le mot.* Elle fabrique un nouveau carnet avec `.filter`, qui garde tous les mots **sauf** celui-là (on ne modifie jamais l'ancien carnet). Puis elle revient à la liste.
+
+**`confirming` / `setConfirming`** (dans `WordDetail.jsx`) — *Retient si on est en train de demander « Tu es sûr ? ».* Le premier clic sur Supprimer n'efface rien : il affiche juste la question. Seul « Oui, supprimer » appelle `onDelete`. Annuler remet le bouton de départ. C'est la règle F9 du cahier des charges.
+
+**`children`** (dans `KnownWordCard.jsx`) — *Un emplacement libre.* Tout ce qu'on écrit entre `<KnownWordCard>` et `</KnownWordCard>` arrive à cet endroit, en bas de la fiche. Ça permet de garder la fiche simple et d'y glisser les boutons seulement quand on en a besoin.
+
+**`key={selectedWord.termNormalized}`** — *Astuce importante.* Quand la `key` change, React jette l'ancien composant et en crée un neuf. Sans elle, la question « Supprimer ? » pouvait rester affichée en passant d'un mot à un autre.
+
+## 3c. Modifier un mot
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/components/EditWordForm.jsx` | Le formulaire qui remplace la fiche quand on clique sur Modifier. |
+
+**`handleUpdate(updatedWord)`** (dans `App.jsx`) — *Remplace un mot par sa version modifiée.* Elle utilise `.map` : on parcourt le carnet, on remplace le mot qui a le même identifiant et on laisse les autres tels quels.
+
+**`draft` dans `EditWordForm`** — *Une copie de travail.* On tape dans la copie ; le vrai mot ne change que si on clique sur Enregistrer. Annuler = on jette la copie, donc rien n'est modifié par erreur. Le mot lui-même (`reckless`) n'est pas modifiable : c'est son identifiant.
+
+**`handleSaveEdit(updatedWord)`** (dans `WordDetail.jsx`) — *Enchaîne deux actions :* prévenir `App` (`onUpdate`), puis refermer le formulaire (`setEditing(false)`).
+
+**`editing` / `confirming`** — Deux petites « mémoires » de `WordDetail` : est-on en train de modifier ? de confirmer une suppression ? Selon leur valeur, React affiche le formulaire, la question ou la fiche simple.
+
+Comme `selectedWord` est retrouvé dans le carnet à chaque affichage (étape 3a), la fiche, la liste, le tableau et la recherche montrent tous la nouvelle version sans rien faire de plus.
+
+## Comment tester l'étape 3
+
+1. **Mes mots** → clique sur **reckless** : la fiche s'ouvre (sans bandeau bleu).
+2. **Modifier** → change la traduction, ajoute un titre de manhwa et un chapitre → **Enregistrer**. Le bloc « Vu dans » apparaît.
+3. Reviens à la liste et tape un morceau de la nouvelle traduction dans la recherche : le mot est trouvé.
+4. **Supprimer** → la question s'affiche → **Annuler** garde le mot, **Oui, supprimer** l'enlève.
+
+## Ce qui n'est pas encore fait
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.
