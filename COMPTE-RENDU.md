@@ -225,3 +225,36 @@ Navigateur (React)  --requête HTTP-->  Serveur Express  --SQL-->  PostgreSQL
 - Installer PostgreSQL, créer la base et les tables (`prisma migrate`).
 - Tester les routes contre la vraie base.
 - Brancher le front sur l'API.
+
+## Mise à jour B2 : la vraie base et les tests de bout en bout
+
+**Ce qui a été fait :** PostgreSQL installé, la base `vocabtracker` créée, puis les tables créées par une **migration** Prisma.
+
+| Élément | Rôle en une phrase |
+| --- | --- |
+| `server/prisma/migrations/…_init/` | L'historique des changements de la base : le SQL qui crée les tables. On le garde dans git pour pouvoir refaire la même base ailleurs (au déploiement). |
+| `server/test/api.test.js` | Un test qui démarre le vrai serveur et rejoue tout le parcours sur la vraie base. |
+
+**Migration** — Quand on change `schema.prisma`, la commande `npx prisma migrate dev` compare le schéma à la base, écrit le SQL nécessaire dans un nouveau dossier et l'applique. C'est comme les « commits » de git, mais pour la structure de la base.
+
+**Ce que le test vérifie (et qui passe) :**
+1. Un mot inconnu → le serveur renvoie un brouillon, avec le mot normalisé (`"  ZZ-TEST  "` devient `"zz-test"`).
+2. On l'enregistre → le chapitre `"42"` (texte) devient le nombre `42`.
+3. On le renvoie avec une autre casse → **409**, la base refuse le doublon (règle n°2).
+4. On le cherche à nouveau → « déjà connu » et le compteur passe à 2.
+5. On le modifie → seuls les champs envoyés changent, le mot lui-même ne change jamais.
+6. On le supprime → puis il est introuvable (404).
+7. Des données invalides (mot vide, chapitre « abc », identifiant bizarre) → des erreurs claires, jamais de plantage.
+
+Le test se nettoie lui-même : il supprime ses mots de test à la fin.
+
+**Comment lancer le serveur et les tests :**
+
+```bash
+cd server
+copy .env.example .env   # une seule fois, puis mets ton mot de passe PostgreSQL dans .env
+npm install
+npx prisma migrate deploy
+npm run dev              # le serveur écoute sur http://localhost:3001
+npm test                 # les tests (la base doit tourner)
+```
