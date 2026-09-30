@@ -9,6 +9,7 @@ Un carnet de vocabulaire anglais pour lire des manhwa : on tape un mot qui bloqu
 - Contexte manhwa optionnel : titre, chapitre
 - Liste avec recherche instantanée (anglais ou français) et tris
 - Fiche d'un mot : modifier, supprimer avec confirmation
+- Comptes privés (e-mail + mot de passe) : chacun ne voit que ses propres mots, sur tous ses appareils
 - Utilisable sur téléphone et sur ordinateur
 
 ## Technologies
@@ -40,7 +41,15 @@ npx prisma migrate deploy   # crée les tables
 cd ..
 ```
 
-Le fichier `server/.env` contient des secrets : il n'est jamais envoyé sur GitHub.
+Le fichier `server/.env` contient des secrets : il n'est jamais envoyé sur GitHub. Deux valeurs sont à remplir :
+
+- `DATABASE_URL` : l'adresse de la base, avec votre mot de passe PostgreSQL ;
+- `JWT_SECRET` : le secret qui signe les sessions (**obligatoire**, 32 caractères minimum). Pour en générer un :
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+  ```
+
+Au premier lancement, créez votre compte depuis l'écran de connexion (« En créer un »).
 
 **Traduction automatique (optionnelle) :** ajoutez une clé d'API DeepL dans `server/.env` (`DEEPL_API_KEY=`). Sans clé, l'appli fonctionne quand même : la traduction est alors à saisir à la main.
 

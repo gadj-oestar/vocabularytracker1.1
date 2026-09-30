@@ -400,5 +400,86 @@ npm run dev:all        # front sur http://localhost:5173, serveur sur http://loc
 ## Ce qui n'est pas encore fait
 
 - **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, pas encore contre le vrai service.
-- **L'authentification** (étape 5 du plan) : en attendant, le serveur simule un utilisateur de développement. N'importe qui qui atteint le serveur voit ce carnet.
 - Le **déploiement en ligne**.
+
+---
+
+# Étape 5 du plan : l'authentification
+
+Avant : le serveur faisait comme si une seule personne « de développement » était toujours connectée. Maintenant : chacun crée un **compte** (e-mail + mot de passe), se **connecte**, et ne voit que **ses** mots. C'est la règle F1 du cahier des charges.
+
+```
+Inscription / connexion --> le serveur vérifie le mot de passe --> dépose un COOKIE de session
+Chaque requête suivante --> le navigateur renvoie le cookie --> le serveur sait qui parle --> ne montre que SES mots
+```
+
+## Ce qui a été ajouté
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `server/src/auth/password.js` | Transforme un mot de passe en « empreinte » (bcrypt) et vérifie un mot de passe saisi. |
+| `server/src/auth/token.js` | Fabrique et lit le jeton de session (JWT), et règle les options du cookie. |
+| `server/src/routes/auth.js` | Les routes : inscription, connexion, déconnexion, « qui suis-je ? ». |
+| `server/src/middleware/requireAuth.js` | Le « videur » : refuse (401) toute requête sans session valide. |
+| `server/src/utils/authInput.js` | Vérifie l'e-mail et le mot de passe reçus. |
+| `src/components/AuthPage.jsx` | L'écran de connexion / création de compte. |
+| `server/test/auth.test.js` | Tests automatiques de sécurité (mot de passe, jeton, cookie, force brute…). |
+
+Supprimé : `server/src/devUser.js` (l'utilisateur factice provisoire).
+
+## Les notions à retenir (sans jargon)
+
+**Hachage (bcrypt)** — *On ne stocke jamais un mot de passe, seulement son empreinte.* C'est à sens unique : on peut vérifier qu'un mot de passe correspond, pas retrouver le mot de passe. Même si la base était volée, les mots de passe restent illisibles. bcrypt est volontairement **lent** (environ 0,25 s) : imperceptible pour vous, mais il rend impraticable d'essayer des millions de mots de passe. Il ajoute aussi un **sel** aléatoire : deux personnes avec le même mot de passe ont des empreintes différentes.
+
+**Jeton de session (JWT)** — *Un petit texte signé qui dit « cette personne est l'utilisateur X ».* Le serveur le signe avec `JWT_SECRET`. Personne ne peut le fabriquer ni le modifier sans ce secret : si on change une lettre, la signature ne correspond plus. Il expire au bout de 30 jours.
+
+**Cookie `httpOnly`** — *Le jeton voyage dans un cookie que le JavaScript de la page ne peut pas lire.* Si un script malveillant s'introduisait dans la page, il ne pourrait pas voler la session (on l'a vérifié : `document.cookie` est vide). Le navigateur renvoie le cookie tout seul, le front n'a rien à gérer.
+
+**`SameSite=Lax`** — *Le navigateur n'envoie pas le cookie quand une requête vient d'un AUTRE site.* Ça empêche un site piégé de faire des actions à votre place (attaque « CSRF »).
+
+**Middleware `requireAuth`** — *Il passe avant les routes des mots.* Pas de session valide → réponse **401** et la route n'est même pas exécutée. Toutes les routes `/api/words` sont protégées d'un seul coup.
+
+**Une seule erreur pour deux cas** — Mauvais mot de passe ou e-mail inconnu : le **même** message (« E-mail ou mot de passe incorrect »), et le même temps de réponse (le serveur calcule une fausse vérification quand l'e-mail n'existe pas). Sinon un attaquant pourrait deviner quels e-mails ont un compte.
+
+**Limite de tentatives** — 10 échecs de connexion par 15 minutes (et 20 créations de compte par heure) par adresse IP, contre les essais en boucle de mots de passe.
+
+**Isolation des utilisateurs** — Chaque requête filtre sur l'identifiant de l'utilisateur connecté. L'utilisateur B qui tente de modifier ou supprimer un mot de A reçoit « introuvable » (404), comme si le mot n'existait pas. Un test le vérifie. L'unicité d'un mot est **par utilisateur** : A et B peuvent chacun avoir « reckless ».
+
+## Dans le front
+
+**`user`** (dans `App.jsx`) — Trois valeurs : `undefined` (on vérifie encore), `null` (personne n'est connecté : écran de connexion) ou l'utilisateur (l'appli). Au démarrage, `getMe()` demande au serveur « suis-je connecté ? » : c'est ce qui permet de rester connecté après un rechargement de la page.
+
+**`clearSession()`** — Quand on se déconnecte, on efface **aussi le carnet en mémoire**. Sinon le carnet de la personne précédente resterait visible pour la suivante.
+
+**`fail(e)`** — Un 401 pendant l'utilisation (session expirée, compte supprimé) renvoie vers l'écran de connexion avec « Ta session a expiré. Reconnecte-toi. », au lieu d'une erreur incompréhensible.
+
+**`autoComplete`** — Sur les champs e-mail et mot de passe, il permet au navigateur ou au gestionnaire de mots de passe de les remplir, et de proposer un mot de passe solide à l'inscription.
+
+## Les attaques contre lesquelles on s'est protégé (et testé)
+
+| Attaque | Protection | Test |
+| --- | --- | --- |
+| Voler la base de données | Mots de passe hachés (bcrypt + sel) | L'empreinte n'est jamais le mot de passe |
+| Fabriquer ou modifier un jeton | Signature avec `JWT_SECRET` | Mauvais secret, jeton expiré, jeton modifié : refusés |
+| Jeton « non signé » (`alg: none`) | Algorithme HS256 imposé | Refusé |
+| Voler la session avec un script | Cookie `httpOnly` | `document.cookie` est vide |
+| Faire agir à votre insu depuis un autre site | `SameSite=Lax`, JSON uniquement | Cookie vérifié |
+| Essayer des milliers de mots de passe | Limite de tentatives + bcrypt lent | Au-delà de 10 échecs : 429 |
+| Deviner quels e-mails ont un compte | Message et temps identiques | Même message dans les deux cas |
+| Lire les mots d'un autre | Filtre sur l'utilisateur partout | Test d'isolation A / B |
+| Données piégées (`{"$ne": null}`…) | Vérification du type de chaque champ | Refusées (400) |
+
+## Comment tester
+
+1. Lancez `npm.cmd run dev:all` et ouvrez http://localhost:5173 : l'écran de connexion s'affiche.
+2. Cliquez sur « En créer un », entrez un e-mail et un mot de passe de 8 caractères minimum : vous êtes connecté.
+3. Ajoutez un mot, rechargez la page : vous restez connecté et le mot est là.
+4. Cliquez sur **Déconnexion**, puis reconnectez-vous.
+5. Créez un second compte : son carnet est vide, il ne voit pas les mots du premier.
+
+## Ce qui n'est pas encore fait
+
+- **Le déploiement en ligne** : il faudra HTTPS (le cookie passera alors en mode `Secure`), un vrai `JWT_SECRET` propre à l'hébergement, et sans doute régler `trust proxy` pour que la limite de tentatives repère la bonne adresse IP.
+- **Réinitialisation du mot de passe** : pas d'envoi d'e-mail pour l'instant. Un mot de passe oublié ne se récupère pas.
+- **Fermeture des inscriptions** : tout le monde peut créer un compte. Pour un carnet strictement personnel, on pourra bloquer les inscriptions après la création du vôtre.
+- **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, pas encore contre le vrai service.
