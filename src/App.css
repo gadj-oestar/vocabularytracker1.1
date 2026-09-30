@@ -228,18 +228,164 @@
   border: 2px solid var(--ink);
   border-radius: 10px;
 }
+/* Bloc "Contexte manhwa". Le fieldset ne garde que la bordure en pointillés ;
+   la disposition des champs est faite par .context-row (un simple div, fiable). */
 .context {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
+  min-width: 0; /* sans ça, un fieldset refuse de rétrécir et déborde sur petit écran */
   margin: 0;
+  padding: 12px;
   border: 2px dashed var(--ink);
   border-radius: 10px;
 }
-.context .field {
-  flex-grow: 1;
+.context-row {
+  display: flex;
+  gap: 8px;
+}
+.field--grow {
+  flex: 1;
+  min-width: 0;
 }
 .field--small {
-  flex-grow: 0 !important;
   width: 72px;
+  flex-shrink: 0;
+}
+
+/* Les deux zones de la fiche : empilées sur téléphone */
+.card-main,
+.card-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== "Derniers mots" : caché sur téléphone, affiché sur ordinateur ===== */
+.recent {
+  display: none;
+}
+.recent-title {
+  margin: 0 0 12px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 400;
+}
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+}
+.recent-translation {
+  font-size: 14px;
+  color: var(--grey);
+}
+.badge--small {
+  align-self: center;
+  padding: 3px 7px;
+  font-size: 13px;
+  border-radius: 6px;
+  transform: none;
+}
+
+/* ===== VERSION ORDINATEUR (écran de 900px et plus) =====
+   @media = "applique ces règles seulement si l'écran est assez large".
+   Tout ce qui est au-dessus reste valable pour le téléphone. */
+@media (min-width: 900px) {
+  .app {
+    max-width: none; /* on utilise toute la largeur */
+    display: grid;
+    /* 2 colonnes : menu de 240px à gauche, contenu à droite.
+       2 lignes : le logo, puis la navigation ; le contenu occupe les deux. */
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'header main'
+      'nav main';
+  }
+
+  /* Le logo et la navigation forment ensemble le menu jaune de gauche */
+  .header {
+    grid-area: header;
+    padding: 28px 20px 0;
+    background: var(--yellow);
+    border-bottom: 0;
+    border-right: 3px solid var(--ink);
+  }
+  .logo {
+    font-size: 26px;
+    line-height: 1.05;
+    transform: rotate(-3deg);
+  }
+
+  .nav {
+    grid-area: nav;
+    flex-direction: column;
+    align-content: start;
+    gap: 10px;
+    padding: 28px 20px;
+    background: var(--yellow);
+    border-top: 0;
+    border-right: 3px solid var(--ink);
+    position: static; /* plus besoin d'être collée en bas */
+  }
+  .nav-item {
+    flex: none;
+    justify-content: flex-start;
+    height: 48px;
+    padding: 0 14px;
+    background: transparent;
+    border: 3px solid transparent;
+    border-radius: 12px;
+  }
+  .nav-item--active {
+    background: var(--white);
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* Contenu : la zone de travail à gauche, "Derniers mots" à droite (280px) */
+  .main {
+    grid-area: main;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    align-items: start;
+    gap: 32px;
+    padding: 36px 40px;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 900px;
+  }
+  .recent {
+    display: block;
+  }
+
+  /* Fiche d'un nouveau mot : le mot à gauche, le contexte manhwa à droite */
+  .card--new {
+    flex-direction: row;
+    gap: 24px;
+    padding: 24px;
+  }
+  .card--new .card-main {
+    flex: 1;
+  }
+  .card--new .card-side {
+    width: 260px;
+    flex-shrink: 0;
+  }
+  .card-term {
+    font-size: 40px;
+  }
 }

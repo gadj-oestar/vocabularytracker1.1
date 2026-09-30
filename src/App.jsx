@@ -4,6 +4,7 @@ import BottomNav from './components/BottomNav'
 import SearchForm from './components/SearchForm'
 import NewWordCard from './components/NewWordCard'
 import KnownWordCard from './components/KnownWordCard'
+import RecentWords from './components/RecentWords'
 import { fakeDictionary } from './data/fakeDictionary'
 import { normalizeTerm } from './utils/normalize'
 import './App.css'
@@ -86,17 +87,22 @@ export default function App() {
     <div className="app">
       <Header />
       <main className="main">
-        <SearchForm onSearch={handleSearch} />
+        {/* Zone de travail : recherche + fiche. Sur ordinateur, "Derniers mots" se place à sa droite. */}
+        <div className="workspace">
+          <SearchForm onSearch={handleSearch} />
 
-        {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
-        {result?.type === 'known' && <KnownWordCard word={result.word} />}
-        {result?.type === 'new' && (
-          <NewWordCard
-            draft={result.draft}
-            onChange={(draft) => setResult({ type: 'new', draft })}
-            onSave={handleSave}
-          />
-        )}
+          {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
+          {result?.type === 'known' && <KnownWordCard word={result.word} />}
+          {result?.type === 'new' && (
+            <NewWordCard
+              draft={result.draft}
+              onChange={(draft) => setResult({ type: 'new', draft })}
+              onSave={handleSave}
+            />
+          )}
+        </div>
+
+        <RecentWords words={words} />
       </main>
       <BottomNav />
     </div>
