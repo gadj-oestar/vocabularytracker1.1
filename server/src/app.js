@@ -29,7 +29,9 @@ app.use((req, res) => {
 
 // Gestionnaire d'erreurs : le SEUL endroit qui décide quoi répondre quand quelque chose échoue.
 // (Express 5 y envoie automatiquement les erreurs des routes `async`.)
-app.use((error, req, res, next) => {
+// Attention : Express reconnaît un gestionnaire d'erreurs à ses 4 paramètres. Le 4e (_next) est inutilisé
+// mais DOIT rester là, sinon Express ne le considérerait plus comme un gestionnaire d'erreurs.
+app.use((error, req, res, _next) => {
   if (error instanceof HttpError) {
     return res.status(error.status).json({ error: error.message })
   }

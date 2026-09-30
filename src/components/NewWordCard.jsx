@@ -1,7 +1,14 @@
 // Fiche d'un mot NOUVEAU : tout est modifiable avant d'enregistrer.
 // Règle du cahier des charges : la traduction de l'API n'est qu'une proposition,
 // "ce que tu enregistres fait foi".
-export default function NewWordCard({ draft, onChange, onSave }) {
+// Ce que le serveur n'a pas pu obtenir, avec le message à montrer pour chaque cas
+const unavailableMessages = {
+  translation: "Traduction automatique indisponible : complète-la toi-même.",
+  dictionary: "Définition indisponible pour le moment : le mot peut quand même être enregistré.",
+};
+
+// `unavailable` = la liste de ce que le serveur n'a pas pu obtenir (ex. ["translation"]).
+export default function NewWordCard({ draft, onChange, onSave, unavailable = [] }) {
   // Petite fonction qui fabrique un "onChange" pour un champ donné (ex. "translation").
   // Elle renvoie une nouvelle version du brouillon avec ce seul champ modifié.
   const edit = (field) => (event) =>
@@ -13,12 +20,22 @@ export default function NewWordCard({ draft, onChange, onSave }) {
     <section className="card card--new">
       <div className="card-main">
         <h2 className="card-term">{draft.term}</h2>
-        {/* On n'affiche la ligne que si on a des infos de dictionnaire */}
-        {draft.phonetic && (
-          <p className="card-meta">
-            {draft.phonetic} · {draft.partOfSpeech}
-          </p>
+        {/* Phonétique et nature du mot, séparées par " · ". .filter(Boolean) retire les champs vides :
+            toutes les sources ne donnent pas les deux (Wiktionary n'a pas de phonétique, par exemple). */}
+        {[draft.phonetic, draft.partOfSpeech].some(Boolean) && (
+          <p className="card-meta">{[draft.phonetic, draft.partOfSpeech].filter(Boolean).join(" · ")}</p>
         )}
+
+        {/* Définition anglaise du dictionnaire (F4), en lecture seule : c'est une aide pour comprendre */}
+        {draft.definition && <p className="card-definition">{draft.definition}</p>}
+
+        {/* Une API n'a pas répondu : pas une erreur, on prévient simplement que ce champ est à remplir.
+            role="status" : les lecteurs d'écran l'annoncent sans interrompre. */}
+        {unavailable.map((key) => (
+          <p key={key} className="card-notice" role="status">
+            {unavailableMessages[key]}
+          </p>
+        ))}
 
         <label className="field">
           <span className="field-label">Traduction</span>

@@ -27,7 +27,10 @@ export default function WordsPage({ words, onOpen }) {
       <div className="words-top">
         <div className="words-head">
           <h1 className="words-title">Mes mots</h1>
-          <span className="words-count">{words.length} mots</span>
+          {/* Accord : "0 mot", "1 mot", "2 mots" (en français, 0 et 1 sont au singulier) */}
+        <span className="words-count">
+          {words.length} {words.length > 1 ? 'mots' : 'mot'}
+        </span>
         </div>
 
         <label className="words-search">
@@ -57,7 +60,12 @@ export default function WordsPage({ words, onOpen }) {
       </div>
 
       {/* Aucun résultat : on le dit clairement plutôt que d'afficher un écran vide */}
-      {visibleWords.length === 0 && <p className="words-empty">Aucun mot trouvé.</p>}
+      {/* Deux cas différents : le carnet est vide (il faut ajouter un mot) ou la recherche ne trouve rien */}
+      {visibleWords.length === 0 && (
+        <p className="words-empty">
+          {words.length === 0 ? "Ton carnet est vide. Ajoute ton premier mot depuis l'onglet « Ajouter »." : 'Aucun mot trouvé.'}
+        </p>
+      )}
 
       {/* TABLEAU : visible seulement sur ordinateur (le CSS cache l'autre affichage).
           Les mêmes données, présentées en colonnes quand on a la place. */}

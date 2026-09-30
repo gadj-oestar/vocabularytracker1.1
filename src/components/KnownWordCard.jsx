@@ -25,13 +25,13 @@ export default function KnownWordCard({ word, showBanner = true, children }) {
         <div className="card-head">
           <div>
             <h2 className="card-term">{word.term}</h2>
-            <p className="card-meta">
-              {word.phonetic} · {word.partOfSpeech}
-            </p>
+            {/* Phonétique et nature du mot, sans " · " orphelin quand l'une des deux manque */}
+            <p className="card-meta">{[word.phonetic, word.partOfSpeech].filter(Boolean).join(' · ')}</p>
           </div>
           <span className="badge badge--yellow">×{word.seenCount}</span>
         </div>
         <p className="card-translation">{word.translation}</p>
+        {word.definition && <p className="card-definition">{word.definition}</p>}
         <p className="card-example">"{word.example}"</p>
 
         {/* "Vu dans" : seulement si un titre de manhwa a été renseigné (champ optionnel).

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import SearchForm from './components/SearchForm'
@@ -7,20 +7,27 @@ import KnownWordCard from './components/KnownWordCard'
 import RecentWords from './components/RecentWords'
 import WordsPage from './components/WordsPage'
 import WordDetail from './components/WordDetail'
-import { initialWords } from './data/initialWords'
-import { fakeDictionary } from './data/fakeDictionary'
-import { normalizeTerm } from './utils/normalize'
+import { createWord, deleteWord, listWords, lookupWord, updateWord } from './api'
 import './App.css'
 
 // App = le "chef d'orchestre" : c'est ici qu'on garde les données
-// et qu'on décide quoi afficher.
+// et qu'on décide quoi afficher. Les données viennent maintenant du SERVEUR (base PostgreSQL) :
+// App les demande au démarrage, puis envoie chaque action (chercher, enregistrer, modifier, supprimer).
 export default function App() {
-  // words : le carnet (liste de tous les mots enregistrés)
-  const [words, setWords] = useState(initialWords)
+  // words : le carnet (liste de tous les mots enregistrés), copie locale de ce que dit le serveur
+  const [words, setWords] = useState([])
+  // loading : true tant que le premier chargement n'est pas terminé
+  const [loading, setLoading] = useState(true)
+  // error : un message d'erreur à afficher (serveur éteint, mot déjà enregistré...), ou null
+  const [error, setError] = useState(null)
+  // loadFailed : true si le carnet n'a pas pu être chargé (ex. serveur éteint) : on propose alors "Réessayer"
+  const [loadFailed, setLoadFailed] = useState(false)
+  // searching : true pendant qu'on attend la réponse du serveur à une recherche
+  const [searching, setSearching] = useState(false)
   // result : ce qu'on affiche sous le champ de recherche.
-  //   null                       -> rien encore
-  //   { type: 'known', word }    -> mot déjà enregistré
-  //   { type: 'new', draft }     -> nouveau mot à compléter puis enregistrer
+  //   null                                      -> rien encore
+  //   { type: 'known', word }                   -> mot déjà enregistré
+  //   { type: 'new', draft, unavailable }       -> nouveau mot à compléter puis enregistrer
   const [result, setResult] = useState(null)
   // screen : l'écran affiché. 'add' = Ajouter un mot, 'list' = Mes mots, 'detail' = fiche d'un mot.
   const [screen, setScreen] = useState('add')
@@ -31,119 +38,209 @@ export default function App() {
   // ainsi la fiche montre toujours la version à jour (après une modification, par exemple).
   const selectedWord = words.find((w) => w.termNormalized === selectedKey)
 
+  // useEffect : "fais ceci APRÈS l'affichage". Avec [] en second argument, ça ne s'exécute qu'une fois,
+  // au démarrage : c'est le moment de demander les mots au serveur.
+  // (loading vaut déjà true au départ, inutile de le remettre à true ici.)
+  useEffect(() => {
+    // cancelled : si le composant disparaît avant la réponse du serveur, on ignore la réponse
+    // (React en mode développement monte l'appli deux fois : sans ça, on traiterait deux réponses).
+    let cancelled = false
+    listWords()
+      .then((loaded) => {
+        if (!cancelled) setWords(loaded)
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e.message)
+          setLoadFailed(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true // fonction de "nettoyage" : React l'appelle quand l'effet n'est plus valable
+    }
+  }, [])
+
+  // Bouton "Réessayer" : refait le même chargement quand le premier a échoué.
+  async function handleRetry() {
+    setLoading(true)
+    setError(null)
+    setLoadFailed(false)
+    try {
+      setWords(await listWords())
+    } catch (e) {
+      setError(e.message)
+      setLoadFailed(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Remplace un mot dans le carnet (ou l'ajoute en tête s'il n'y est pas encore).
+  function putWord(word) {
+    setWords((current) =>
+      current.some((w) => w.id === word.id) ? current.map((w) => (w.id === word.id ? word : w)) : [word, ...current],
+    )
+  }
+
+  // Appelée par SearchForm quand on valide un mot.
+  async function handleSearch(rawTerm) {
+    setError(null)
+    setSearching(true)
+    try {
+      // Le SERVEUR fait tout le travail : normalisation, recherche dans la base, compteur "vu X fois",
+      // et pour un nouveau mot, appel aux dictionnaires et à DeepL.
+      const data = await lookupWord(rawTerm)
+      if (data.status === 'known') {
+        putWord(data.word) // le compteur a augmenté côté serveur : on met à jour notre copie
+        setResult({ type: 'known', word: data.word })
+      } else {
+        setResult({ type: 'new', draft: data.draft, unavailable: data.unavailable })
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setSearching(false) // quoi qu'il arrive (succès ou erreur), la recherche est terminée
+    }
+  }
+
+  // Appelée par le bouton ENREGISTRER.
+  async function handleSave() {
+    setError(null)
+    try {
+      const saved = await createWord(result.draft)
+      putWord(saved)
+      setResult(null) // on efface la fiche : prêt pour le mot suivant
+    } catch (e) {
+      // Ex. 409 "Ce mot est déjà enregistré" : la base a refusé le doublon. La fiche reste affichée.
+      setError(e.message)
+    }
+  }
+
+  // Appelée quand on enregistre une modification (F9). Renvoie true si ça a marché : le formulaire
+  // ne se referme que dans ce cas, pour ne pas perdre ce qu'on a tapé si le serveur a refusé.
+  async function handleUpdate(updatedWord) {
+    setError(null)
+    try {
+      putWord(await updateWord(updatedWord.id, updatedWord))
+      setResult(null) // la fiche de l'écran "Ajouter" montrerait l'ancienne version
+      return true
+    } catch (e) {
+      setError(e.message)
+      return false
+    }
+  }
+
+  // Appelée quand on confirme la suppression d'un mot (F9).
+  async function handleDelete(word) {
+    setError(null)
+    try {
+      await deleteWord(word.id)
+      // .filter garde tous les mots SAUF celui-là : on fabrique un nouveau carnet, sans modifier l'ancien
+      setWords((current) => current.filter((w) => w.id !== word.id))
+      setSelectedKey(null)
+      setResult(null)
+      setScreen('list') // retour à la liste
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   // Appelée quand on clique sur un mot de la liste.
   function handleOpen(word) {
+    setError(null)
     setSelectedKey(word.termNormalized)
     setScreen('detail')
   }
 
-  // Appelée par SearchForm quand on valide un mot.
-  function handleSearch(rawTerm) {
-    const termNormalized = normalizeTerm(rawTerm)
-
-    // RÈGLE n°3 du cahier des charges : on regarde D'ABORD dans le carnet,
-    // avant de chercher ailleurs (pas d'appel inutile à une API).
-    const existing = words.find((w) => w.termNormalized === termNormalized)
-
-    if (existing) {
-      // Doublon : on augmente le compteur "vu X fois" (F6)...
-      const updated = { ...existing, seenCount: existing.seenCount + 1 }
-      // ...en remplaçant seulement ce mot dans la liste (on ne modifie jamais l'ancien objet)
-      setWords(words.map((w) => (w === existing ? updated : w)))
-      setResult({ type: 'known', word: updated })
-      return
-    }
-
-    // Nouveau mot : on cherche dans le faux dictionnaire. Introuvable ? Champs vides à remplir
-    // soi-même (règle "échec d'API" : le mot peut quand même être enregistré).
-    const found = fakeDictionary[termNormalized] ?? {}
-    setResult({
-      type: 'new',
-      draft: {
-        term: rawTerm.trim(),
-        termNormalized,
-        translation: found.translation ?? '',
-        partOfSpeech: found.partOfSpeech ?? '',
-        phonetic: found.phonetic ?? '',
-        example: found.example ?? '',
-        sourceTitle: '',
-        sourceChapter: '',
-      },
-    })
+  // Changer d'écran efface l'ancien message d'erreur : il ne concerne plus ce qu'on regarde
+  function handleNavigate(nextScreen) {
+    setError(null)
+    setScreen(nextScreen)
   }
 
-  // Appelée quand on enregistre une modification (F9).
-  function handleUpdate(updatedWord) {
-    // .map parcourt le carnet : on remplace le mot modifié (repéré par son identifiant)
-    // et on laisse tous les autres tels quels.
-    setWords(words.map((w) => (w.termNormalized === updatedWord.termNormalized ? updatedWord : w)))
-    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface : il montrerait l'ancienne version
-    setResult(null)
-  }
+  // Le message d'erreur (affiché en haut de chaque écran). role="alert" : les lecteurs d'écran l'annoncent.
+  const errorBanner = error && (
+    <div className="error-banner" role="alert">
+      <span>{error}</span>
+      {/* Carnet non chargé : "Réessayer" relance le chargement. Sinon on peut juste fermer le message. */}
+      {loadFailed ? (
+        <button type="button" className="link-button" onClick={handleRetry}>
+          Réessayer
+        </button>
+      ) : (
+        <button type="button" className="link-button" onClick={() => setError(null)}>
+          Fermer
+        </button>
+      )}
+    </div>
+  )
 
-  // Appelée quand on confirme la suppression d'un mot (F9).
-  function handleDelete(word) {
-    // .filter garde tous les mots SAUF celui-là : on fabrique un nouveau carnet, sans modifier l'ancien
-    setWords(words.filter((w) => w.termNormalized !== word.termNormalized))
-    setSelectedKey(null)
-    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface aussi : il n'existe plus
-    setResult(null)
-    setScreen('list') // retour à la liste
-  }
+  // Pendant le premier chargement, on n'affiche qu'un message d'attente
+  let content
+  if (loading) {
+    content = (
+      <main className="main main--single">
+        <p className="loading" role="status">
+          Chargement de ton carnet…
+        </p>
+      </main>
+    )
+  } else if (screen === 'add') {
+    content = (
+      <main className="main">
+        {errorBanner}
+        {/* Zone de travail : recherche + fiche. Sur ordinateur, "Derniers mots" se place à sa droite. */}
+        <div className="workspace">
+          <SearchForm onSearch={handleSearch} busy={searching} />
 
-  // Appelée par le bouton ENREGISTRER.
-  function handleSave() {
-    const newWord = {
-      ...result.draft,
-      seenCount: 1,
-      createdAt: new Date().toISOString().slice(0, 10), // date du jour, ex. "2026-09-30"
-    }
-    setWords([newWord, ...words]) // le plus récent en premier (F8)
-    setResult(null) // on efface la fiche : prêt pour le mot suivant
+          {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
+          {result?.type === 'known' && <KnownWordCard word={result.word} />}
+          {result?.type === 'new' && (
+            <NewWordCard
+              draft={result.draft}
+              unavailable={result.unavailable}
+              onChange={(draft) => setResult({ ...result, draft })}
+              onSave={handleSave}
+            />
+          )}
+        </div>
+
+        <RecentWords words={words} onSeeAll={() => handleNavigate('list')} />
+      </main>
+    )
+  } else if (screen === 'detail' && selectedWord) {
+    content = (
+      <main className="main main--single">
+        {errorBanner}
+        <WordDetail
+          // key : quand on ouvre un AUTRE mot, React repart d'un composant neuf
+          // (sinon la question "Supprimer ?" pourrait rester affichée d'une fiche à l'autre)
+          key={selectedWord.termNormalized}
+          word={selectedWord}
+          onBack={() => handleNavigate('list')}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      </main>
+    )
+  } else {
+    content = (
+      <main className="main main--single">
+        {errorBanner}
+        <WordsPage words={words} onOpen={handleOpen} />
+      </main>
+    )
   }
 
   return (
     <div className="app">
       <Header />
-      {/* Selon l'écran choisi dans la navigation, on affiche une page ou l'autre */}
-      {screen === 'add' ? (
-        <main className="main">
-          {/* Zone de travail : recherche + fiche. Sur ordinateur, "Derniers mots" se place à sa droite. */}
-          <div className="workspace">
-            <SearchForm onSearch={handleSearch} />
-
-            {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
-            {result?.type === 'known' && <KnownWordCard word={result.word} />}
-            {result?.type === 'new' && (
-              <NewWordCard
-                draft={result.draft}
-                onChange={(draft) => setResult({ type: 'new', draft })}
-                onSave={handleSave}
-              />
-            )}
-          </div>
-
-          <RecentWords words={words} onSeeAll={() => setScreen('list')} />
-        </main>
-      ) : screen === 'detail' && selectedWord ? (
-        <main className="main main--single">
-          <WordDetail
-            // key : quand on ouvre un AUTRE mot, React repart d'un composant neuf
-            // (sinon la question "Supprimer ?" pourrait rester affichée d'une fiche à l'autre)
-            key={selectedWord.termNormalized}
-            word={selectedWord}
-            onBack={() => setScreen('list')}
-            onUpdate={handleUpdate}
-            onDelete={handleDelete}
-          />
-        </main>
-      ) : (
-        <main className="main main--single">
-          <WordsPage words={words} onOpen={handleOpen} />
-        </main>
-      )}
+      {content}
       {/* Pendant qu'on regarde une fiche, l'onglet "Mes mots" reste allumé : la fiche en fait partie */}
-      <BottomNav screen={screen === 'detail' ? 'list' : screen} onNavigate={setScreen} />
+      <BottomNav screen={screen === 'detail' ? 'list' : screen} onNavigate={handleNavigate} />
     </div>
   )
 }

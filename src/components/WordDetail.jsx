@@ -11,9 +11,11 @@ export default function WordDetail({ word, onBack, onUpdate, onDelete }) {
   // editing : est-on en train de modifier le mot ? (la fiche est remplacée par un formulaire)
   const [editing, setEditing] = useState(false)
 
-  function handleSaveEdit(updatedWord) {
-    onUpdate(updatedWord) // App met à jour le carnet...
-    setEditing(false) // ...et on revient à la fiche en lecture
+  async function handleSaveEdit(updatedWord) {
+    // App envoie la modification au serveur et répond true si ça a marché.
+    // On attend (await) : si le serveur refuse, on GARDE le formulaire ouvert pour ne pas perdre ce qu'on a tapé.
+    const saved = await onUpdate(updatedWord)
+    if (saved) setEditing(false) // tout va bien : on revient à la fiche en lecture
   }
 
   return (

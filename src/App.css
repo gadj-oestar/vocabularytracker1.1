@@ -67,6 +67,10 @@
   border-radius: 12px;
   cursor: pointer;
 }
+.btn:disabled {
+  opacity: 0.6;
+  cursor: wait; /* pendant qu'on attend le serveur */
+}
 .btn--blue {
   color: var(--white);
   background: var(--blue);
@@ -170,6 +174,47 @@
   font-size: 15px;
   font-style: italic;
   line-height: 1.45;
+}
+
+/* Définition anglaise du dictionnaire : plus discrète que la traduction */
+.card-definition {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--grey);
+}
+/* Avertissement "API indisponible" : jaune pâle, pas rouge (ce n'est pas une erreur) */
+.card-notice {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--paper);
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+}
+
+/* Message d'erreur en haut de l'écran */
+.error-banner {
+  grid-column: 1 / -1; /* sur ordinateur, occupe toute la largeur de la grille */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  font-weight: 600;
+  color: var(--white);
+  background: var(--danger);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.error-banner .link-button {
+  color: var(--white);
+}
+.loading {
+  margin: 0;
+  font-weight: 600;
 }
 
 /* Petit compteur "×3" */
