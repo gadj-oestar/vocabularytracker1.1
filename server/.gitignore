@@ -1,0 +1,5 @@
+node_modules
+# Secrets : ne jamais les envoyer sur GitHub
+.env
+# Code généré par Prisma (il se recrée avec `npx prisma generate`)
+src/generated

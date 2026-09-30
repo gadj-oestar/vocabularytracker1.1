@@ -1,0 +1,48 @@
+// Schéma de la base de données, d'après la section "Modèle de données" du cahier des charges.
+// Prisma lit ce fichier pour créer les tables PostgreSQL et générer le code pour les utiliser.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Table "users" : l'utilisateur (toi). La connexion arrive à l'étape 5 du plan ;
+// en attendant, le serveur utilise un utilisateur de développement.
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique // deux comptes ne peuvent pas avoir le même e-mail
+  passwordHash String   @map("password_hash") // mot de passe haché, JAMAIS en clair
+  createdAt    DateTime @default(now()) @map("created_at")
+  words        Word[]
+
+  @@map("users")
+}
+
+// Table "words" : un mot du carnet.
+model Word {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid // à qui appartient ce mot
+  term           String // le mot tel que saisi ("Give Up")
+  termNormalized String   @map("term_normalized") // le mot "propre" ("give up"), sert à détecter les doublons
+  translation    String   @default("")
+  partOfSpeech   String   @default("") @map("part_of_speech") // nom, verbe, adjectif...
+  phonetic       String   @default("")
+  definition     String   @default("")
+  example        String   @default("")
+  sourceTitle    String?  @map("source_title") // titre du manhwa (optionnel : "?" = peut être vide)
+  sourceChapter  Int?     @map("source_chapter") // chapitre (optionnel)
+  sourceSentence String?  @map("source_sentence") // phrase de la bulle (optionnel)
+  seenCount      Int      @default(1) @map("seen_count") // compteur "vu X fois"
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // RÈGLE n°2 du cahier des charges : la base REFUSE le doublon (même utilisateur + même mot normalisé),
+  // même si le front se trompe. C'est la garantie finale.
+  @@unique([userId, termNormalized])
+  @@map("words")
+}

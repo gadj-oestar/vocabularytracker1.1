@@ -176,3 +176,52 @@ Comme `selectedWord` est retrouvé dans le carnet à chaque affichage (étape 3a
 ## Ce qui n'est pas encore fait
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.
+
+---
+
+# Étape 3 du plan : le back-end (Express + PostgreSQL)
+
+Jusqu'ici les mots vivaient dans la mémoire du navigateur et disparaissaient au rechargement. Le back-end est un **programme qui tourne à part** (dans le dossier `server/`), qui garde les mots dans une **base de données** et que le front interroge par des **requêtes HTTP**.
+
+```
+Navigateur (React)  --requête HTTP-->  Serveur Express  --SQL-->  PostgreSQL
+   le front               l'API          (server/)             la base (les mots)
+```
+
+## Mise à jour B1 : le squelette du serveur
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `server/prisma/schema.prisma` | Le plan de la base : les tables `users` et `words`, avec la règle « pas de doublon ». |
+| `server/prisma.config.ts` | Dit à Prisma où est le schéma et comment joindre la base. |
+| `server/.env.example` | Modèle du fichier secret `.env` (adresse et mot de passe de la base). |
+| `server/src/index.js` | Le point d'entrée : démarre le serveur. |
+| `server/src/app.js` | Branche tout : CORS, lecture du JSON, routes, gestion des erreurs. |
+| `server/src/db.js` | La connexion à la base (un seul client partagé). |
+| `server/src/routes/words.js` | Les routes de l'API pour les mots (lire, chercher, créer, modifier, supprimer). |
+| `server/src/utils/normalize.js` | Met un mot sous sa forme « propre » (comme dans le front). |
+| `server/src/utils/wordInput.js` | Vérifie et nettoie ce que le front envoie. |
+| `server/src/devUser.js` | **Temporaire** : simule un utilisateur connecté, jusqu'à l'étape 5 (connexion). |
+| `server/test/utils.test.js` | Tests automatiques (`npm test`). |
+
+## Les notions à retenir
+
+- **Route** : une adresse + une action. `GET /api/words` = « donne-moi les mots », `DELETE /api/words/12` = « supprime le mot 12 ». Ensemble, ces routes forment l'API.
+- **Prisma** : l'outil qui traduit du JavaScript en requêtes SQL. On écrit `prisma.word.findMany(...)` au lieu de SQL à la main.
+- **Middleware** : une fonction qui s'exécute *avant* les routes (ex. `attachDevUser` ajoute l'utilisateur à la requête).
+- **CORS** : par sécurité, un navigateur interdit à une page d'appeler un autre serveur. On autorise seulement notre front.
+- **`.env`** : le fichier des secrets (mot de passe de la base). Il n'est **jamais** envoyé sur GitHub, seul `.env.example` l'est.
+
+## Les règles du cahier des charges, appliquées côté serveur
+
+1. **Normalisation** : le serveur calcule `termNormalized` lui-même, il ne fait jamais confiance au front.
+2. **Unicité** : la base refuse deux fois le même mot pour un utilisateur (`@@unique`). Si ça arrive, l'API répond **409** « déjà enregistré ».
+3. **Ordre des opérations** : `POST /api/words/lookup` regarde **d'abord** dans la base ; si le mot existe, le compteur « vu X fois » monte.
+4. **On ne fait pas confiance aux données reçues** : `wordInput.js` refuse un mot vide, un texte trop long, un chapitre qui n'est pas un nombre.
+5. **Chaque utilisateur ne voit que ses mots** : toutes les requêtes filtrent sur `userId`.
+
+## Ce qui n'est pas encore fait (dans le back-end)
+
+- Installer PostgreSQL, créer la base et les tables (`prisma migrate`).
+- Tester les routes contre la vraie base.
+- Brancher le front sur l'API.
