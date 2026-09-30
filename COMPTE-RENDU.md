@@ -302,7 +302,32 @@ Un test qui dépend d'internet échoue quand le site est en panne, alors que not
 | grudge | nom | Deep-seated and/or long-term animosity… |
 | no way | adverbe | In no way; not at all; under no circumstances. |
 
+
+## Mise à jour 4b : la traduction (DeepL) et la limite de requêtes
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `server/src/services/translate.js` | Traduit un mot de l'anglais vers le français avec DeepL. |
+| `server/test/translate.test.js` | Teste ce service avec un **faux** DeepL (aucun quota consommé). |
+
+**`createTranslator(...)` et `translate(term)`** — *Envoient le mot à DeepL et rendent la traduction.* Elles utilisent la clé secrète du fichier `.env` (`DEEPL_API_KEY`). Comme pour le dictionnaire : délai maximum de 5 secondes, disjoncteur d'une minute après un échec, et **jamais d'exception** : en cas de problème, on renvoie une traduction vide.
+
+**La clé reste sur le serveur.** Le front appelle *notre* serveur, qui appelle DeepL. La clé ne passe jamais par le navigateur, n'est jamais dans le code ni sur GitHub, et **n'apparaît jamais dans les journaux** (un test le vérifie).
+
+**Sans clé, l'appli fonctionne quand même.** La traduction est vide et la réponse dit `unavailable: ["translation"]` : on la saisit à la main (règle « échec d'API »).
+
+**`Promise.all`** — Le dictionnaire et DeepL sont interrogés **en même temps** : on attend le plus lent des deux, pas la somme.
+
+**`lookupLimiter`** (dans `routes/words.js`) — *Limite les recherches à 30 par minute.* Règle de sécurité du cahier des charges : chaque nouveau mot consomme le quota DeepL, et un script fou ou une boucle par erreur pourrait le vider en quelques secondes. Au-delà de 30, le serveur répond **429** « Trop de recherches ». L'en-tête `RateLimit` indique combien il en reste.
+
+## Comment obtenir et brancher la clé DeepL
+
+1. Créez un compte sur DeepL et choisissez l'offre API (voir les conditions et les prix au moment de l'inscription : elles changent).
+2. Copiez la clé depuis votre compte (elle se termine par `:fx` pour l'offre gratuite).
+3. Ouvrez `server/.env` et mettez-la après `DEEPL_API_KEY=`. Ce fichier n'est jamais envoyé sur GitHub.
+4. Redémarrez le serveur (`npm run start` dans `server`).
+
 ## Ce qui n'est pas encore fait
 
-- La **traduction** française (DeepL), qui demande une clé d'API.
-- Brancher le front sur l'API.
+- **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, mais pas encore contre le vrai service.
+- **Brancher le front sur l'API** : le front utilise encore ses données en dur.

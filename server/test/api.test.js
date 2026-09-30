@@ -23,6 +23,10 @@ async function call(method, path, body) {
 
 const realFetch = globalThis.fetch
 
+// Une clé DeepL INVENTÉE pour le test : DeepL est intercepté plus bas, rien ne part sur internet
+// et le vrai quota (si une vraie clé est dans .env) n'est jamais consommé.
+process.env.DEEPL_API_KEY = 'cle-de-test:fx'
+
 before(() => {
   // Les appels vers les API de dictionnaire sont interceptés : le test ne dépend pas d'internet
   // (et ne risque pas d'échouer si une API est en panne). Tout le reste passe normalement.
@@ -37,6 +41,9 @@ before(() => {
           en: [{ partOfSpeech: 'Noun', definitions: [{ definition: '<b>A test</b> &amp; more.', examples: ['An <b>example</b>.'] }] }],
         }),
       )
+    }
+    if (address.includes('deepl.com')) {
+      return Promise.resolve(Response.json({ translations: [{ text: 'mot de test' }] }))
     }
     return realFetch(url, options)
   }
@@ -64,6 +71,7 @@ test('cycle complet : chercher, créer, doublon, modifier, supprimer', async () 
   assert.equal(r.body.draft.partOfSpeech, 'nom')
   assert.equal(r.body.draft.definition, 'A test & more.')
   assert.equal(r.body.draft.example, 'An example.')
+  assert.equal(r.body.draft.translation, 'mot de test') // proposition de DeepL (simulé)
   assert.deepEqual(r.body.unavailable, [])
 
   // 2. On l'enregistre (le front envoie "42" en texte : le serveur en fait un nombre)
@@ -116,4 +124,20 @@ test('données invalides : erreurs claires (400/404), jamais de plantage', async
   assert.equal((await call('POST', '/api/words', { term: 'zz-test x', translation: 123 })).status, 400)
   assert.equal((await call('DELETE', '/api/words/pas-un-uuid')).status, 404)
   assert.equal((await call('PATCH', '/api/words/pas-un-uuid', {})).status, 404)
+})
+
+// Ce test doit rester le DERNIER : il épuise volontairement la limite de recherches (30 par minute),
+// ce qui gênerait les tests suivants.
+test('limite de requêtes : trop de recherches d\'affilée -> 429', async () => {
+  let tooMany = 0
+  for (let i = 0; i < 40; i++) {
+    const r = await call('POST', '/api/words/lookup', { term: 'zz-test limite' })
+    if (r.status === 429) {
+      tooMany++
+      assert.match(r.body.error, /Trop de recherches/)
+    }
+  }
+  assert.ok(tooMany > 0, 'la limite aurait dû se déclencher')
+  // Les autres routes ne sont pas concernées par la limite
+  assert.equal((await call('GET', '/api/words')).status, 200)
 })

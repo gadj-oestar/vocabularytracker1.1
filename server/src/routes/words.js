@@ -8,7 +8,9 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { normalizeTerm } from '../utils/normalize.js'
+import rateLimit from 'express-rate-limit'
 import { dictionary } from '../services/dictionary.js'
+import { translator } from '../services/translate.js'
 import { HttpError, cleanTerm, cleanWordFields } from '../utils/wordInput.js'
 
 const router = Router()
@@ -29,9 +31,20 @@ router.get('/', async (req, res) => {
   res.json(words)
 })
 
+// Limite de requêtes (règle de sécurité du cahier des charges) : chaque nouveau mot déclenche des appels
+// à des services externes, dont DeepL qui a un quota. Sans limite, un script ou une boucle par erreur
+// pourrait vider le quota en quelques secondes. Ici : 30 recherches par minute, très large pour un usage normal.
+const lookupLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: 'draft-8', // indique au client combien de requêtes il lui reste
+  legacyHeaders: false,
+  message: { error: 'Trop de recherches. Réessaie dans une minute.' },
+})
+
 // POST /api/words/lookup  { "term": "give up" }
 // L'équivalent de ce que fait le champ "Un mot t'a bloqué ?" dans le front.
-router.post('/lookup', async (req, res) => {
+router.post('/lookup', lookupLimiter, async (req, res) => {
   const term = cleanTerm(req.body?.term)
   const termNormalized = normalizeTerm(term)
 
@@ -51,16 +64,19 @@ router.post('/lookup', async (req, res) => {
     return res.json({ status: 'known', word })
   }
 
-  // Nouveau mot : on demande la définition, la nature et un exemple aux dictionnaires (étape 4 du plan).
-  // Le navigateur n'appelle JAMAIS ces API lui-même : c'est le serveur qui le fait.
-  const { info, available } = await dictionary.lookup(normalizeTerm(term))
+  // Nouveau mot : on demande la définition (dictionnaires) ET la traduction (DeepL) EN MÊME TEMPS
+  // (étape 4 du plan). Le navigateur n'appelle JAMAIS ces API lui-même : c'est le serveur qui le fait.
+  const [{ info, available }, translation] = await Promise.all([
+    dictionary.lookup(termNormalized),
+    translator.translate(termNormalized),
+  ])
 
   res.json({
     status: 'new',
     draft: {
       term,
       termNormalized,
-      translation: '', // rempli par DeepL dans la mise à jour suivante
+      translation: translation.text, // proposition de DeepL : modifiable avant d'enregistrer
       partOfSpeech: info.partOfSpeech,
       phonetic: info.phonetic,
       definition: info.definition,
@@ -71,7 +87,10 @@ router.post('/lookup', async (req, res) => {
     },
     // Ce qui n'a pas pu être obtenu : le front peut le dire à l'utilisateur ("à compléter toi-même").
     // RÈGLE "échec d'API" : ce n'est pas une erreur, le mot peut quand même être enregistré.
-    unavailable: available ? [] : ['dictionary'],
+    unavailable: [
+      ...(available ? [] : ['dictionary']),
+      ...(translation.available ? [] : ['translation']),
+    ],
   })
 })
 
