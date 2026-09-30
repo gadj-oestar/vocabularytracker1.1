@@ -118,8 +118,30 @@ Petit détail : quand le titre du manhwa n'est pas renseigné (champ optionnel),
 3. Clique sur **A-Z**, puis **Les plus vus** : l'ordre change.
 4. Tape `zzz` → « Aucun mot trouvé ».
 
+---
+
+# Étape 3 : la fiche d'un mot
+
+## 3a. Ouvrir la fiche depuis la liste
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/components/WordDetail.jsx` | L'écran « fiche d'un mot » : un bouton de retour et la fiche. |
+
+`KnownWordCard.jsx` est **réutilisé** : on lui ajoute `showBanner` pour cacher le bandeau bleu quand on ouvre la fiche au lieu de retaper le mot. On écrit une fois, on réutilise deux fois.
+
+**`handleOpen(word)`** (dans `App.jsx`) — *Ouvre la fiche d'un mot.* Elle retient lequel (`selectedKey`) et passe à l'écran `'detail'`.
+
+**`selectedWord`** — *Retrouve le mot ouvert dans le carnet* à chaque affichage, au lieu d'en garder une copie. Ainsi la fiche est toujours à jour (important pour Modifier, à l'étape suivante).
+
+**`onOpen` / `onBack`** — Les cartes de la liste sont maintenant des `<button>` : un clic appelle `onOpen(word)`, donc remonte jusqu'à `App`. Le bouton « Retour » appelle `onBack`. C'est le même principe qu'avant : les données descendent, les actions remontent.
+
+**Le champ « Vu dans »** — Il n'apparaît que si un titre de manhwa a été saisi. `{word.sourceTitle && (...)}` veut dire : « si le titre existe, affiche ce bloc, sinon n'affiche rien ».
+
+Pendant qu'on regarde une fiche, l'onglet « Mes mots » reste allumé : la fiche fait partie de cette section.
+
 ## Ce qui n'est pas encore fait
 
-- La fiche d'un mot avec Modifier / Supprimer.
+- Modifier et Supprimer un mot.
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.

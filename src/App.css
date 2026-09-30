@@ -331,6 +331,12 @@
   list-style: none;
 }
 .word-item {
+  /* Les cartes sont des <button> : on neutralise le style par défaut du navigateur */
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -364,6 +370,33 @@
 }
 .link-button:hover {
   color: var(--blue);
+}
+.link-button--term {
+  font-size: 15px;
+  text-align: left;
+}
+
+/* Écran "fiche d'un mot" */
+.detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.detail .card {
+  width: 100%;
+  max-width: 560px;
+}
+/* Encadré "Vu dans" : pointillés comme le bloc Contexte manhwa */
+.seen-in {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  font-size: 14px;
+  background: var(--paper);
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
 }
 
 /* ===== "Derniers mots" : caché sur téléphone, affiché sur ordinateur ===== */
