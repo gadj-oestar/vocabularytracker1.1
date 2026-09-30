@@ -140,8 +140,18 @@ Petit détail : quand le titre du manhwa n'est pas renseigné (champ optionnel),
 
 Pendant qu'on regarde une fiche, l'onglet « Mes mots » reste allumé : la fiche fait partie de cette section.
 
+## 3b. Supprimer un mot (avec confirmation)
+
+**`handleDelete(word)`** (dans `App.jsx`) — *Supprime vraiment le mot.* Elle fabrique un nouveau carnet avec `.filter`, qui garde tous les mots **sauf** celui-là (on ne modifie jamais l'ancien carnet). Puis elle revient à la liste.
+
+**`confirming` / `setConfirming`** (dans `WordDetail.jsx`) — *Retient si on est en train de demander « Tu es sûr ? ».* Le premier clic sur Supprimer n'efface rien : il affiche juste la question. Seul « Oui, supprimer » appelle `onDelete`. Annuler remet le bouton de départ. C'est la règle F9 du cahier des charges.
+
+**`children`** (dans `KnownWordCard.jsx`) — *Un emplacement libre.* Tout ce qu'on écrit entre `<KnownWordCard>` et `</KnownWordCard>` arrive à cet endroit, en bas de la fiche. Ça permet de garder la fiche simple et d'y glisser les boutons seulement quand on en a besoin.
+
+**`key={selectedWord.termNormalized}`** — *Astuce importante.* Quand la `key` change, React jette l'ancien composant et en crée un neuf. Sans elle, la question « Supprimer ? » pouvait rester affichée en passant d'un mot à un autre.
+
 ## Ce qui n'est pas encore fait
 
-- Modifier et Supprimer un mot.
+- Modifier un mot (étape 3c).
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.

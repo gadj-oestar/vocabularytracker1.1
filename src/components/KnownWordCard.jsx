@@ -3,7 +3,9 @@ import { formatDate } from '../utils/formatDate'
 // Fiche d'un mot DÉJÀ enregistré : (bandeau bleu) + infos en lecture seule.
 // showBanner = true par défaut : le bandeau "Déjà dans ton carnet" s'affiche quand on vient
 // de retaper un mot connu, mais pas quand on ouvre simplement la fiche depuis la liste.
-export default function KnownWordCard({ word, showBanner = true }) {
+// `children` = tout ce qu'on place ENTRE les balises <KnownWordCard>...</KnownWordCard>.
+// Ici c'est un emplacement libre en bas de la fiche (utilisé pour les boutons Modifier / Supprimer).
+export default function KnownWordCard({ word, showBanner = true, children }) {
   return (
     <>
       {showBanner && (
@@ -48,6 +50,8 @@ export default function KnownWordCard({ word, showBanner = true }) {
         {!showBanner && (
           <p className="card-meta">Ajouté le {formatDate(word.createdAt)}</p>
         )}
+
+        {children}
       </section>
     </>
   )

@@ -72,6 +72,16 @@ export default function App() {
     })
   }
 
+  // Appelée quand on confirme la suppression d'un mot (F9).
+  function handleDelete(word) {
+    // .filter garde tous les mots SAUF celui-là : on fabrique un nouveau carnet, sans modifier l'ancien
+    setWords(words.filter((w) => w.termNormalized !== word.termNormalized))
+    setSelectedKey(null)
+    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface aussi : il n'existe plus
+    setResult(null)
+    setScreen('list') // retour à la liste
+  }
+
   // Appelée par le bouton ENREGISTRER.
   function handleSave() {
     const newWord = {
@@ -108,7 +118,14 @@ export default function App() {
         </main>
       ) : screen === 'detail' && selectedWord ? (
         <main className="main main--single">
-          <WordDetail word={selectedWord} onBack={() => setScreen('list')} />
+          <WordDetail
+            // key : quand on ouvre un AUTRE mot, React repart d'un composant neuf
+            // (sinon la question "Supprimer ?" pourrait rester affichée d'une fiche à l'autre)
+            key={selectedWord.termNormalized}
+            word={selectedWord}
+            onBack={() => setScreen('list')}
+            onDelete={handleDelete}
+          />
         </main>
       ) : (
         <main className="main main--single">

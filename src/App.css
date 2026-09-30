@@ -387,6 +387,39 @@
   width: 100%;
   max-width: 560px;
 }
+/* Boutons d'action en bas de la fiche (Modifier / Supprimer) */
+.actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-outline {
+  flex: 1;
+  height: 48px;
+  font: 700 15px var(--font-text);
+  color: var(--ink);
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.btn-outline--danger {
+  color: var(--danger);
+}
+/* Question de confirmation : fond jaune pâle pour bien la remarquer */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+.confirm-text {
+  margin: 0;
+  font-weight: 700;
+}
+
 /* Encadré "Vu dans" : pointillés comme le bloc Contexte manhwa */
 .seen-in {
   display: flex;
