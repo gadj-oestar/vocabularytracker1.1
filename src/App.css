@@ -405,6 +405,10 @@
 .btn-outline--danger {
   color: var(--danger);
 }
+.btn-outline--primary {
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+}
 /* Question de confirmation : fond jaune pâle pour bien la remarquer */
 .confirm {
   display: flex;

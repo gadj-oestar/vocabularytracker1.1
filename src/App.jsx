@@ -72,6 +72,15 @@ export default function App() {
     })
   }
 
+  // Appelée quand on enregistre une modification (F9).
+  function handleUpdate(updatedWord) {
+    // .map parcourt le carnet : on remplace le mot modifié (repéré par son identifiant)
+    // et on laisse tous les autres tels quels.
+    setWords(words.map((w) => (w.termNormalized === updatedWord.termNormalized ? updatedWord : w)))
+    // Si ce mot était affiché sur l'écran "Ajouter", on l'efface : il montrerait l'ancienne version
+    setResult(null)
+  }
+
   // Appelée quand on confirme la suppression d'un mot (F9).
   function handleDelete(word) {
     // .filter garde tous les mots SAUF celui-là : on fabrique un nouveau carnet, sans modifier l'ancien
@@ -124,6 +133,7 @@ export default function App() {
             key={selectedWord.termNormalized}
             word={selectedWord}
             onBack={() => setScreen('list')}
+            onUpdate={handleUpdate}
             onDelete={handleDelete}
           />
         </main>

@@ -150,8 +150,29 @@ Pendant qu'on regarde une fiche, l'onglet « Mes mots » reste allumé : la fich
 
 **`key={selectedWord.termNormalized}`** — *Astuce importante.* Quand la `key` change, React jette l'ancien composant et en crée un neuf. Sans elle, la question « Supprimer ? » pouvait rester affichée en passant d'un mot à un autre.
 
-## Ce qui n'est pas encore fait
+## 3c. Modifier un mot
 
-- Modifier un mot (étape 3c).
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/components/EditWordForm.jsx` | Le formulaire qui remplace la fiche quand on clique sur Modifier. |
+
+**`handleUpdate(updatedWord)`** (dans `App.jsx`) — *Remplace un mot par sa version modifiée.* Elle utilise `.map` : on parcourt le carnet, on remplace le mot qui a le même identifiant et on laisse les autres tels quels.
+
+**`draft` dans `EditWordForm`** — *Une copie de travail.* On tape dans la copie ; le vrai mot ne change que si on clique sur Enregistrer. Annuler = on jette la copie, donc rien n'est modifié par erreur. Le mot lui-même (`reckless`) n'est pas modifiable : c'est son identifiant.
+
+**`handleSaveEdit(updatedWord)`** (dans `WordDetail.jsx`) — *Enchaîne deux actions :* prévenir `App` (`onUpdate`), puis refermer le formulaire (`setEditing(false)`).
+
+**`editing` / `confirming`** — Deux petites « mémoires » de `WordDetail` : est-on en train de modifier ? de confirmer une suppression ? Selon leur valeur, React affiche le formulaire, la question ou la fiche simple.
+
+Comme `selectedWord` est retrouvé dans le carnet à chaque affichage (étape 3a), la fiche, la liste, le tableau et la recherche montrent tous la nouvelle version sans rien faire de plus.
+
+## Comment tester l'étape 3
+
+1. **Mes mots** → clique sur **reckless** : la fiche s'ouvre (sans bandeau bleu).
+2. **Modifier** → change la traduction, ajoute un titre de manhwa et un chapitre → **Enregistrer**. Le bloc « Vu dans » apparaît.
+3. Reviens à la liste et tape un morceau de la nouvelle traduction dans la recherche : le mot est trouvé.
+4. **Supprimer** → la question s'affiche → **Annuler** garde le mot, **Oui, supprimer** l'enlève.
+
+## Ce qui n'est pas encore fait
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.
