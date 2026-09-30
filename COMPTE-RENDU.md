@@ -105,6 +105,12 @@ npm run dev
 
 Ces deux valeurs restent dans `WordsPage` et pas dans `App` : elles ne concernent que cet écran. La règle : **on garde une donnée le plus près possible de l'endroit où on s'en sert**.
 
+## Téléphone : cartes, ordinateur : tableau
+
+`WordsPage` écrit **les deux** affichages (une liste de cartes et un tableau) avec les mêmes données `visibleWords`. C'est le CSS qui décide lequel est visible : les cartes en dessous de 900 px, le tableau (colonnes Mot, Traduction, Manhwa, Vu, Ajouté le) au-dessus. Sur ordinateur, le titre et la recherche passent aussi sur la même ligne.
+
+Petit détail : quand le titre du manhwa n'est pas renseigné (champ optionnel), le tableau affiche « — ».
+
 ## Comment tester
 
 1. Clique sur **Mes mots** : 5 cartes, compteur jaune pour les mots vus plus d'une fois.

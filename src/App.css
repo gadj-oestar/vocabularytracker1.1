@@ -276,6 +276,11 @@
   font-size: 14px;
   font-weight: 600;
 }
+/* Le tableau est caché sur téléphone (il est montré dans la partie ordinateur plus bas) */
+.words-table-wrap {
+  display: none;
+}
+
 /* Texte lu par les lecteurs d'écran mais invisible à l'écran (ex. label de la recherche) */
 .sr-only {
   position: absolute;
@@ -468,6 +473,67 @@
   /* Écran "Mes mots" : une seule colonne, pas de "Derniers mots" */
   .main--single {
     display: block;
+  }
+  .words-page {
+    gap: 20px;
+  }
+  /* Titre à gauche, recherche à droite (380px) sur la même ligne */
+  .words-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .words-title {
+    font-size: 34px;
+  }
+  .words-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .words-search {
+    width: 380px;
+  }
+  .words-search input {
+    height: 50px;
+  }
+  /* On remplace les cartes par le tableau */
+  .words-list {
+    display: none;
+  }
+  .words-table-wrap {
+    display: block;
+    overflow: hidden;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .words-table {
+    width: 100%;
+    font-size: 15px;
+    border-collapse: collapse;
+  }
+  .words-table th,
+  .words-table td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 2px solid var(--ink);
+  }
+  .words-table tbody tr:last-child td {
+    border-bottom: 0; /* pas de trait sous la dernière ligne */
+  }
+  .words-table thead {
+    background: var(--yellow);
+  }
+  .words-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .words-table-term {
+    font-weight: 700;
   }
   .workspace {
     display: flex;

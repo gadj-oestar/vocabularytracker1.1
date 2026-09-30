@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { filterAndSort } from '../utils/filterWords'
+import { formatDate } from '../utils/formatDate'
 
 // Les boutons de tri de la maquette
 const sortOptions = [
@@ -21,20 +22,23 @@ export default function WordsPage({ words }) {
 
   return (
     <div className="words-page">
-      <div className="words-head">
-        <h1 className="words-title">Mes mots</h1>
-        <span className="words-count">{words.length} mots</span>
-      </div>
+      {/* Titre + recherche : empilés sur téléphone, sur la même ligne sur ordinateur */}
+      <div className="words-top">
+        <div className="words-head">
+          <h1 className="words-title">Mes mots</h1>
+          <span className="words-count">{words.length} mots</span>
+        </div>
 
-      <label className="words-search">
-        <span className="sr-only">Rechercher</span>
-        <input
-          type="search"
-          placeholder="Anglais ou français…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </label>
+        <label className="words-search">
+          <span className="sr-only">Rechercher</span>
+          <input
+            type="search"
+            placeholder="Anglais ou français…"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      </div>
 
       <div className="chips">
         {sortOptions.map((option) => (
@@ -54,6 +58,41 @@ export default function WordsPage({ words }) {
       {/* Aucun résultat : on le dit clairement plutôt que d'afficher un écran vide */}
       {visibleWords.length === 0 && <p className="words-empty">Aucun mot trouvé.</p>}
 
+      {/* TABLEAU : visible seulement sur ordinateur (le CSS cache l'autre affichage).
+          Les mêmes données, présentées en colonnes quand on a la place. */}
+      {visibleWords.length > 0 && (
+        <div className="words-table-wrap">
+          <table className="words-table">
+            <thead>
+              <tr>
+                <th>Mot</th>
+                <th>Traduction</th>
+                <th>Manhwa</th>
+                <th>Vu</th>
+                <th>Ajouté le</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleWords.map((word) => (
+                <tr key={word.termNormalized}>
+                  <td className="words-table-term">{word.term}</td>
+                  <td>{word.translation}</td>
+                  {/* "—" quand le titre du manhwa n'a pas été renseigné (champ optionnel) */}
+                  <td>{word.sourceTitle || '—'}</td>
+                  <td>
+                    <span className={`badge badge--small ${word.seenCount > 1 ? 'badge--yellow' : ''}`}>
+                      ×{word.seenCount}
+                    </span>
+                  </td>
+                  <td>{formatDate(word.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CARTES : visibles seulement sur téléphone */}
       <ul className="words-list">
         {visibleWords.map((word) => (
           <li key={word.termNormalized} className="word-item">
