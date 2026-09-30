@@ -5,21 +5,15 @@ import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import app from '../src/app.js'
 import { prisma } from '../src/db.js'
+import { rawCall, registerTestUser } from '../testing/helpers.js'
 
 let server
 let base // l'adresse du serveur de test, ex. http://localhost:54321
+let cookie // la session de l'utilisateur de test (les routes des mots exigent d'être connecté)
 const TERM = `zz-test ${Date.now()}` // un mot unique à chaque lancement
 
-// Petite aide : envoie une requête JSON et renvoie { status, body }
-async function call(method, path, body) {
-  const response = await fetch(base + path, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  const text = await response.text()
-  return { status: response.status, body: text ? JSON.parse(text) : null }
-}
+// Petite aide : envoie une requête JSON AVEC la session de l'utilisateur de test
+const call = (method, path, body) => rawCall(base, method, path, body, cookie)
 
 const realFetch = globalThis.fetch
 
@@ -27,7 +21,7 @@ const realFetch = globalThis.fetch
 // et le vrai quota (si une vraie clé est dans .env) n'est jamais consommé.
 process.env.DEEPL_API_KEY = 'cle-de-test:fx'
 
-before(() => {
+before(async () => {
   // Les appels vers les API de dictionnaire sont interceptés : le test ne dépend pas d'internet
   // (et ne risque pas d'échouer si une API est en panne). Tout le reste passe normalement.
   globalThis.fetch = (url, options) => {
@@ -51,12 +45,15 @@ before(() => {
   // port 0 = "choisis un port libre" : le test ne gêne pas le vrai serveur
   server = app.listen(0)
   base = `http://localhost:${server.address().port}`
+
+  // On crée un compte de test et on garde sa session : tous les appels suivants sont "connectés"
+  cookie = (await registerTestUser(base, 'api')).cookie
 })
 
 after(async () => {
   globalThis.fetch = realFetch // on remet le vrai fetch
-  // Ménage : on supprime tous les mots de test, puis on ferme serveur et connexion
-  await prisma.word.deleteMany({ where: { termNormalized: { startsWith: 'zz-test' } } })
+  // Ménage : on supprime les comptes de test (leurs mots partent avec, en cascade), puis on ferme serveur et connexion
+  await prisma.user.deleteMany({ where: { email: { startsWith: 'zz-test-' } } })
   server.close()
   await prisma.$disconnect()
 })
@@ -124,6 +121,48 @@ test('données invalides : erreurs claires (400/404), jamais de plantage', async
   assert.equal((await call('POST', '/api/words', { term: 'zz-test x', translation: 123 })).status, 400)
   assert.equal((await call('DELETE', '/api/words/pas-un-uuid')).status, 404)
   assert.equal((await call('PATCH', '/api/words/pas-un-uuid', {})).status, 404)
+})
+
+test('isolation : chaque utilisateur ne voit et ne touche que SES mots', async () => {
+  const shared = `${TERM} iso` // le même mot sera enregistré par les deux utilisateurs
+  const created = await call('POST', '/api/words', { term: shared, translation: 'mot de A' })
+  assert.equal(created.status, 201)
+  const idOfA = created.body.id
+
+  // Un second utilisateur, B, avec sa propre session
+  const b = await registerTestUser(base, 'b')
+  const asB = (method, path, body) => rawCall(base, method, path, body, b.cookie)
+
+  // B ne voit pas le mot de A dans sa liste...
+  const list = await asB('GET', '/api/words')
+  assert.equal(list.status, 200)
+  assert.ok(!list.body.some((w) => w.id === idOfA))
+  // ...pour lui ce mot est NOUVEAU (et le compteur de A ne bouge pas)...
+  assert.equal((await asB('POST', '/api/words/lookup', { term: shared })).body.status, 'new')
+  // ...il ne peut ni le modifier ni le supprimer : le serveur répond "introuvable", comme s'il n'existait pas
+  assert.equal((await asB('PATCH', `/api/words/${idOfA}`, { translation: 'piraté' })).status, 404)
+  assert.equal((await asB('DELETE', `/api/words/${idOfA}`)).status, 404)
+  // ...et il peut enregistrer le MÊME mot : l'unicité est par utilisateur, pas globale
+  assert.equal((await asB('POST', '/api/words', { term: shared, translation: 'mot de B' })).status, 201)
+
+  // Le mot de A est intact
+  const mine = (await call('GET', '/api/words')).body.find((w) => w.id === idOfA)
+  assert.equal(mine.translation, 'mot de A')
+  assert.equal(mine.seenCount, 1)
+})
+
+test('sans session valide : toutes les routes des mots répondent 401', async () => {
+  const requests = [
+    ['GET', '/api/words'],
+    ['POST', '/api/words/lookup', { term: 'x' }],
+    ['POST', '/api/words', { term: 'x' }],
+    ['PATCH', '/api/words/00000000-0000-4000-8000-000000000000', {}],
+    ['DELETE', '/api/words/00000000-0000-4000-8000-000000000000'],
+  ]
+  for (const [method, path, body] of requests) {
+    assert.equal((await rawCall(base, method, path, body)).status, 401, `${method} ${path} sans cookie`)
+    assert.equal((await rawCall(base, method, path, body, 'token=pas.un.vrai.jeton')).status, 401, `${method} ${path} jeton bidon`)
+  }
 })
 
 // Ce test doit rester le DERNIER : il épuise volontairement la limite de recherches (30 par minute),
