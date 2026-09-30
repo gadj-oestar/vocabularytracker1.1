@@ -19,6 +19,7 @@ Objectif de l'étape : reproduire la maquette de l'écran d'ajout, avec des **do
 | `src/components/SearchForm.jsx` | Le champ « Un mot t'a bloqué ? » et le bouton GO. |
 | `src/components/NewWordCard.jsx` | La fiche d'un **nouveau** mot : on peut tout modifier avant d'enregistrer. |
 | `src/components/KnownWordCard.jsx` | La fiche d'un mot **déjà enregistré**, avec le bandeau bleu « Déjà dans ton carnet ». |
+| `src/components/RecentWords.jsx` | La colonne « Derniers mots » (les 3 plus récents), visible **seulement sur ordinateur**. |
 | `src/utils/normalize.js` | Met un mot sous une forme « propre » pour pouvoir le comparer. |
 | `src/utils/formatDate.js` | Transforme `2026-09-12` en `12/09/2026`. |
 | `src/data/fakeDictionary.js` | Un faux dictionnaire de 5 mots, à la place de DeepL pour l'instant. |
@@ -40,6 +41,18 @@ Objectif de l'étape : reproduire la maquette de l'écran d'ajout, avec des **do
 **`handleSubmit(event)`** (dans `SearchForm.jsx`) — *Réagit au clic sur GO ou à la touche Entrée.* Elle empêche la page de se recharger, ignore un champ vide, prévient `App`, puis vide le champ.
 
 **`edit(field)`** (dans `NewWordCard.jsx`) — *Une petite « usine ».* Elle fabrique la fonction qui met à jour UN champ du brouillon (traduction, exemple, titre, chapitre) quand on tape dedans, sans écrire la même chose quatre fois.
+
+## Le responsive (téléphone / ordinateur)
+
+Le principe : on écrit **d'abord** le style du téléphone, puis un bloc `@media (min-width: 900px)` qui dit « si l'écran est assez large, change ces règles ». Un seul code HTML, deux présentations.
+
+| | Téléphone (< 900 px) | Ordinateur (≥ 900 px) |
+| --- | --- | --- |
+| Navigation | Barre en bas | Menu jaune à gauche (240 px) avec le logo |
+| Fiche d'un nouveau mot | Tout empilé | Le mot à gauche, « Contexte manhwa » + bouton à droite |
+| « Derniers mots » | Caché | Colonne de 280 px à droite |
+
+**Correction du bloc « Contexte manhwa » :** il n'était pas centré parce que la balise `<fieldset>` se comporte mal avec `display: flex`. Le `fieldset` ne garde maintenant que la bordure en pointillés, et les champs sont rangés dans un simple `<div>` (`.context-row`).
 
 ## Comment ça circule (le principe le plus important en React)
 
@@ -66,5 +79,4 @@ npm run dev
 
 - L'écran « Mes mots » (étape 2) et la fiche avec Modifier / Supprimer.
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
-- Le menu latéral de la version ordinateur (pour l'instant, la mise en page mobile est centrée).
 - Les vraies API de traduction et de définition.
