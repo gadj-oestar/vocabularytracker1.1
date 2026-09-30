@@ -1,184 +1,564 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
-}
-
-#center {
+/* ===== Mise en page générale (mobile d'abord) ===== */
+.app {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
+  max-width: 480px; /* largeur d'un téléphone, centré sur les grands écrans */
+  margin: 0 auto;
+}
+
+.main {
   flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
-}
-
-#next-steps {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px 20px;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+/* ===== Bandeau du haut ===== */
+.header {
+  padding: 20px 20px 14px;
+  background: var(--yellow);
+  border-bottom: 3px solid var(--ink);
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
+.logo {
+  font-family: var(--font-title);
+  font-size: 22px;
+  transform: rotate(-2deg); /* petit effet "manga" */
+}
+.logo span {
+  color: var(--blue);
+}
+
+/* ===== Barre de navigation ===== */
+.nav {
+  display: flex;
+  gap: 3px; /* l'espace laisse voir le fond noir : c'est le trait de séparation */
+  border-top: 3px solid var(--ink);
+  background: var(--ink);
+  position: sticky; /* reste collée en bas de l'écran */
+  bottom: 0;
+}
+
+.nav-item {
+  flex: 1;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 16px var(--font-text);
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--white);
+  border: 0;
+}
+.nav-item--active {
+  background: var(--yellow);
+}
+
+/* ===== Boutons ===== */
+.btn {
+  height: 48px;
+  padding: 0 16px;
+  font-family: var(--font-title);
+  font-size: 15px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.btn--blue {
+  color: var(--white);
+  background: var(--blue);
+}
+.btn--yellow {
+  color: var(--ink);
+  background: var(--yellow);
+  border-width: 3px;
+  box-shadow: 4px 4px 0 var(--ink); /* ombre décalée : le style "BD" de la maquette */
+}
+.btn--big {
+  height: 52px;
+  font-size: 17px;
+}
+
+/* ===== Champ de recherche (la bulle) ===== */
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.search-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.search-row {
   display: flex;
   gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+}
+.search-row input {
+  flex-grow: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  font: 600 18px var(--font-text);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
+/* Petite "queue" de bulle de dialogue sous le bloc */
+.bubble {
   position: relative;
+}
+.search.bubble::after {
+  content: '';
+  position: absolute;
+  left: 34px;
+  bottom: -15px;
+  width: 22px;
+  height: 22px;
+  background: var(--white);
+  border-right: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
+  transform: skewY(35deg) rotate(45deg);
+}
+
+/* ===== Fiche d'un mot ===== */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  margin-top: 8px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.card-term {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+.card-meta {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--grey);
+}
+.card-translation {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 22px;
+}
+.card-example {
+  margin: 0;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+/* Petit compteur "×3" */
+.badge {
+  align-self: flex-start;
+  padding: 6px 10px;
+  font-family: var(--font-title);
+  font-size: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  transform: rotate(3deg);
+}
+.badge--yellow {
+  background: var(--yellow);
+}
+
+/* ===== Bandeau "Déjà dans ton carnet" ===== */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  color: var(--white);
+  background: var(--blue);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.banner-icon {
+  font-family: var(--font-title);
+  font-size: 26px;
+  transform: rotate(-6deg);
+}
+
+/* ===== Champs de formulaire dans la fiche ===== */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+.field-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.field input {
+  height: 44px;
+  padding: 0 12px;
+  font: 600 16px var(--font-text);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+/* Bloc "Contexte manhwa". Le fieldset ne garde que la bordure en pointillés ;
+   la disposition des champs est faite par .context-row (un simple div, fiable). */
+.context {
+  min-width: 0; /* sans ça, un fieldset refuse de rétrécir et déborde sur petit écran */
+  margin: 0;
+  padding: 12px;
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+}
+.context-row {
+  display: flex;
+  gap: 8px;
+}
+.field--grow {
+  flex: 1;
+  min-width: 0;
+}
+.field--small {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+/* Les deux zones de la fiche : empilées sur téléphone */
+.card-main,
+.card-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== Écran "Mes mots" ===== */
+.words-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.words-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.words-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 400;
+}
+.words-count {
+  font-size: 14px;
+  font-weight: 600;
+}
+/* Le tableau est caché sur téléphone (il est montré dans la partie ordinateur plus bas) */
+.words-table-wrap {
+  display: none;
+}
+
+/* Texte lu par les lecteurs d'écran mais invisible à l'écran (ex. label de la recherche) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.words-search input {
   width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  font: 500 15px var(--font-text);
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  height: 36px;
+  padding: 0 14px;
+  font: 700 13px var(--font-text);
+  color: var(--ink);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip--active {
+  color: var(--paper);
+  background: var(--ink);
+}
+.words-empty {
+  margin: 8px 0;
+  font-weight: 600;
+  color: var(--grey);
+}
+.words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.word-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.word-term {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+}
+.word-translation {
+  display: block;
+  font-size: 14px;
+  color: var(--grey);
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+/* Bouton qui ressemble à un lien (ex. "Voir tous mes mots →") */
+.link-button {
+  padding: 4px 0;
+  font: 700 14px var(--font-text);
+  color: var(--ink);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.link-button:hover {
+  color: var(--blue);
+}
+
+/* ===== "Derniers mots" : caché sur téléphone, affiché sur ordinateur ===== */
+.recent {
+  display: none;
+}
+.recent-title {
+  margin: 0 0 12px;
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: 400;
+}
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+}
+.recent-translation {
+  font-size: 14px;
+  color: var(--grey);
+}
+.badge--small {
+  align-self: center;
+  padding: 3px 7px;
+  font-size: 13px;
+  border-radius: 6px;
+  transform: none;
+}
+
+/* ===== VERSION ORDINATEUR (écran de 900px et plus) =====
+   @media = "applique ces règles seulement si l'écran est assez large".
+   Tout ce qui est au-dessus reste valable pour le téléphone. */
+@media (min-width: 900px) {
+  .app {
+    max-width: none; /* on utilise toute la largeur */
+    display: grid;
+    /* 2 colonnes : menu de 240px à gauche, contenu à droite.
+       2 lignes : le logo, puis la navigation ; le contenu occupe les deux. */
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'header main'
+      'nav main';
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  /* Le logo et la navigation forment ensemble le menu jaune de gauche */
+  .header {
+    grid-area: header;
+    padding: 28px 20px 0;
+    background: var(--yellow);
+    border-bottom: 0;
+    border-right: 3px solid var(--ink);
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+  .logo {
+    font-size: 26px;
+    line-height: 1.05;
+    transform: rotate(-3deg);
+  }
+
+  .nav {
+    grid-area: nav;
+    flex-direction: column;
+    align-content: start;
+    gap: 10px;
+    padding: 28px 20px;
+    background: var(--yellow); /* le fond noir du mobile redevient jaune */
+    border-top: 0;
+    border-right: 3px solid var(--ink);
+    position: static; /* plus besoin d'être collée en bas */
+  }
+  .nav-item {
+    flex: none;
+    justify-content: flex-start;
+    height: 48px;
+    padding: 0 14px;
+    background: transparent;
+    border: 3px solid transparent;
+    border-radius: 12px;
+  }
+  .nav-item--active {
+    background: var(--white);
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* Contenu : la zone de travail à gauche, "Derniers mots" à droite (280px) */
+  .main {
+    grid-area: main;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    align-items: start;
+    gap: 32px;
+    padding: 36px 40px;
+  }
+  /* Écran "Mes mots" : une seule colonne, pas de "Derniers mots" */
+  .main--single {
+    display: block;
+  }
+  .words-page {
+    gap: 20px;
+  }
+  /* Titre à gauche, recherche à droite (380px) sur la même ligne */
+  .words-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .words-title {
+    font-size: 34px;
+  }
+  .words-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .words-search {
+    width: 380px;
+  }
+  .words-search input {
+    height: 50px;
+  }
+  /* On remplace les cartes par le tableau */
+  .words-list {
+    display: none;
+  }
+  .words-table-wrap {
+    display: block;
+    overflow: hidden;
+    background: var(--white);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .words-table {
+    width: 100%;
+    font-size: 15px;
+    border-collapse: collapse;
+  }
+  .words-table th,
+  .words-table td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 2px solid var(--ink);
+  }
+  .words-table tbody tr:last-child td {
+    border-bottom: 0; /* pas de trait sous la dernière ligne */
+  }
+  .words-table thead {
+    background: var(--yellow);
+  }
+  .words-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .words-table-term {
+    font-weight: 700;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 900px;
+  }
+  .recent {
+    display: block;
+  }
+
+  /* Fiche d'un nouveau mot : le mot à gauche, le contexte manhwa à droite */
+  .card--new {
+    flex-direction: row;
+    gap: 24px;
+    padding: 24px;
+  }
+  .card--new .card-main {
+    flex: 1;
+  }
+  .card--new .card-side {
+    width: 260px;
+    flex-shrink: 0;
+  }
+  .card-term {
+    font-size: 40px;
   }
 }
