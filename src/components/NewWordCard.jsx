@@ -4,7 +4,8 @@
 export default function NewWordCard({ draft, onChange, onSave }) {
   // Petite fonction qui fabrique un "onChange" pour un champ donné (ex. "translation").
   // Elle renvoie une nouvelle version du brouillon avec ce seul champ modifié.
-  const edit = (field) => (event) => onChange({ ...draft, [field]: event.target.value })
+  const edit = (field) => (event) =>
+    onChange({ ...draft, [field]: event.target.value });
 
   return (
     // La fiche a deux zones : "main" (le mot) et "side" (le contexte + le bouton).
@@ -21,12 +22,16 @@ export default function NewWordCard({ draft, onChange, onSave }) {
 
         <label className="field">
           <span className="field-label">Traduction</span>
-          <input type="text" value={draft.translation} onChange={edit('translation')} />
+          <input
+            type="text"
+            value={draft.translation}
+            onChange={edit("translation")}
+          />
         </label>
 
         <label className="field">
           <span className="field-label">Exemple</span>
-          <input type="text" value={draft.example} onChange={edit('example')} />
+          <input type="text" value={draft.example} onChange={edit("example")} />
         </label>
       </div>
 
@@ -39,7 +44,11 @@ export default function NewWordCard({ draft, onChange, onSave }) {
           <div className="context-row">
             <label className="field field--grow">
               Titre
-              <input type="text" value={draft.sourceTitle} onChange={edit('sourceTitle')} />
+              <input
+                type="text"
+                value={draft.sourceTitle}
+                onChange={edit("sourceTitle")}
+              />
             </label>
             <label className="field field--small">
               Ch.
@@ -47,16 +56,20 @@ export default function NewWordCard({ draft, onChange, onSave }) {
                 type="text"
                 inputMode="numeric"
                 value={draft.sourceChapter}
-                onChange={edit('sourceChapter')}
+                onChange={edit("sourceChapter")}
               />
             </label>
           </div>
         </fieldset>
 
-        <button className="btn btn--yellow btn--big" type="button" onClick={onSave}>
+        <button
+          className="btn btn--yellow btn--big"
+          type="button"
+          onClick={onSave}
+        >
           ENREGISTRER
         </button>
       </div>
     </section>
-  )
+  );
 }
