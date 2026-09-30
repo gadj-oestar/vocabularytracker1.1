@@ -75,8 +75,45 @@ npm run dev
 2. Tape **grudge** → fiche à compléter, puis **ENREGISTRER**.
 3. Tape **grudge** à nouveau → il est maintenant reconnu.
 
+---
+
+# Étape 2 : l'écran « Mes mots »
+
+## Ce qui a été ajouté
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/components/WordsPage.jsx` | L'écran « Mes mots » : titre, recherche, boutons de tri et liste de cartes. |
+| `src/utils/filterWords.js` | Filtre et trie la liste selon ce qui est tapé et le bouton choisi. |
+| `src/data/initialWords.js` | Le carnet de départ (les 5 mots de la maquette), sorti de `App.jsx` pour l'alléger. |
+
+`BottomNav.jsx` a aussi changé : ses deux boutons sont maintenant actifs et changent d'écran.
+
+## Les nouvelles fonctions
+
+**`setScreen` / `screen`** (dans `App.jsx`) — *Retient l'écran affiché* (`'add'` ou `'list'`). Quand on clique dans la barre de navigation, `screen` change et React affiche l'autre page. Il n'y a qu'une seule page web : on change juste ce qu'elle montre.
+
+**`filterAndSort(words, query, sort)`** — *Prépare la liste à afficher.* Elle garde les mots qui contiennent le texte cherché (en anglais **ou** en français, sans tenir compte des accents ni des majuscules), puis les trie. Elle ne modifie jamais le carnet : elle renvoie une **copie** triée.
+
+**`removeAccents(text)`** — *Enlève les accents* pour que `impru` trouve `imprudent` et `tetu` trouve `têtu`.
+
+**`sorters`** — *Les trois façons de trier* : Récents (date la plus récente d'abord), Les plus vus (compteur le plus grand d'abord) et A-Z (ordre alphabétique).
+
+## Pourquoi la recherche est « instantanée »
+
+`query` (le texte tapé) et `sort` (le tri choisi) sont des `useState`. À chaque lettre ou clic, React rappelle `WordsPage`, qui recalcule `visibleWords` avec `filterAndSort`. Pas de bouton « Rechercher » : l'écran suit ce qu'on tape.
+
+Ces deux valeurs restent dans `WordsPage` et pas dans `App` : elles ne concernent que cet écran. La règle : **on garde une donnée le plus près possible de l'endroit où on s'en sert**.
+
+## Comment tester
+
+1. Clique sur **Mes mots** : 5 cartes, compteur jaune pour les mots vus plus d'une fois.
+2. Tape `ranc` → seul **grudge** reste. Tape `impru` → **reckless**.
+3. Clique sur **A-Z**, puis **Les plus vus** : l'ordre change.
+4. Tape `zzz` → « Aucun mot trouvé ».
+
 ## Ce qui n'est pas encore fait
 
-- L'écran « Mes mots » (étape 2) et la fiche avec Modifier / Supprimer.
+- La fiche d'un mot avec Modifier / Supprimer.
 - Les mots ne sont pas sauvegardés : tout disparaît quand on recharge la page (la base de données arrive avec le back-end).
 - Les vraies API de traduction et de définition.

@@ -276,6 +276,47 @@
   font-size: 14px;
   font-weight: 600;
 }
+/* Texte lu par les lecteurs d'écran mais invisible à l'écran (ex. label de la recherche) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.words-search input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  font: 500 15px var(--font-text);
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  height: 36px;
+  padding: 0 14px;
+  font: 700 13px var(--font-text);
+  color: var(--ink);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chip--active {
+  color: var(--paper);
+  background: var(--ink);
+}
+.words-empty {
+  margin: 8px 0;
+  font-weight: 600;
+  color: var(--grey);
+}
 .words-list {
   display: flex;
   flex-direction: column;
