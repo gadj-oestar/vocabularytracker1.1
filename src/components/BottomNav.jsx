@@ -1,15 +1,27 @@
 // Barre de navigation : en bas sur téléphone, à gauche sur ordinateur (le CSS décide).
-// Étape 1 : seul "Ajouter" est actif. "Mes mots" arrive à l'étape 2.
-export default function BottomNav() {
+// `screen` = l'écran affiché ('add' ou 'list'), `onNavigate` = fonction donnée par App
+// pour changer d'écran.
+const items = [
+  { id: 'add', label: 'Ajouter' },
+  { id: 'list', label: 'Mes mots' },
+]
+
+export default function BottomNav({ screen, onNavigate }) {
   return (
     <nav className="nav" aria-label="Navigation principale">
-      <a className="nav-item nav-item--active" href="#ajouter" aria-current="page">
-        Ajouter
-      </a>
-      {/* disabled : on montre le bouton de la maquette sans le rendre cliquable */}
-      <button className="nav-item" type="button" disabled title="Bientôt disponible">
-        Mes mots
-      </button>
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          // Le bouton de l'écran actuel reçoit la classe "active" (fond jaune dans la maquette)
+          className={`nav-item ${screen === item.id ? 'nav-item--active' : ''}`}
+          // aria-current : indique aux lecteurs d'écran quelle page est ouverte
+          aria-current={screen === item.id ? 'page' : undefined}
+          onClick={() => onNavigate(item.id)}
+        >
+          {item.label}
+        </button>
+      ))}
     </nav>
   )
 }

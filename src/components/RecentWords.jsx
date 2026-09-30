@@ -1,7 +1,7 @@
 import { formatDate } from '../utils/formatDate'
 
 // Colonne "Derniers mots" : visible seulement sur ordinateur (le CSS la cache sur téléphone).
-export default function RecentWords({ words }) {
+export default function RecentWords({ words, onSeeAll }) {
   // On ne garde que les 3 premiers : le carnet est déjà trié du plus récent au plus ancien.
   const recent = words.slice(0, 3)
 
@@ -23,6 +23,10 @@ export default function RecentWords({ words }) {
           </li>
         ))}
       </ul>
+      {/* Raccourci vers l'écran "Mes mots" */}
+      <button className="link-button" type="button" onClick={onSeeAll}>
+        Voir tous mes mots →
+      </button>
     </aside>
   )
 }

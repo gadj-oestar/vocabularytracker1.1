@@ -1,0 +1,66 @@
+// Carnet de départ EN DUR (étape 1-2) : les 5 mots de la maquette.
+// Ils sont rangés du plus récent au plus ancien (règle F8 du cahier des charges).
+// Plus tard, ces données viendront de la base de données via le back-end.
+// "termNormalized" = le mot "propre" (minuscules, sans espaces en trop) utilisé pour comparer.
+export const initialWords = [
+  {
+    term: 'reckless',
+    termNormalized: 'reckless',
+    translation: 'imprudent, téméraire',
+    partOfSpeech: 'adjectif',
+    phonetic: '/ˈrek.ləs/',
+    example: 'It was reckless to fight him alone.',
+    sourceTitle: '',
+    sourceChapter: '',
+    seenCount: 3, // compteur "vu X fois" (F6)
+    createdAt: '2026-09-12',
+  },
+  {
+    term: 'grudge',
+    termNormalized: 'grudge',
+    translation: 'rancune',
+    partOfSpeech: 'nom',
+    phonetic: '/ɡrʌdʒ/',
+    example: 'He held a grudge against the king.',
+    sourceTitle: '',
+    sourceChapter: '',
+    seenCount: 2,
+    createdAt: '2026-09-10',
+  },
+  {
+    term: 'give up',
+    termNormalized: 'give up',
+    translation: 'abandonner',
+    partOfSpeech: 'verbe',
+    phonetic: '/ɡɪv ʌp/',
+    example: "I won't give up now.",
+    sourceTitle: '',
+    sourceChapter: '',
+    seenCount: 1,
+    createdAt: '2026-09-08',
+  },
+  {
+    term: 'no way',
+    termNormalized: 'no way',
+    translation: "pas question / c'est pas vrai",
+    partOfSpeech: 'expression',
+    phonetic: '/noʊ weɪ/',
+    example: 'No way, that is impossible!',
+    sourceTitle: '',
+    sourceChapter: '',
+    seenCount: 1,
+    createdAt: '2026-09-05',
+  },
+  {
+    term: 'relentless',
+    termNormalized: 'relentless',
+    translation: 'implacable, acharné',
+    partOfSpeech: 'adjectif',
+    phonetic: '/rɪˈlent.ləs/',
+    example: 'The relentless hunter never stopped.',
+    sourceTitle: '',
+    sourceChapter: '',
+    seenCount: 1,
+    createdAt: '2026-09-02',
+  },
+]

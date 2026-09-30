@@ -5,26 +5,11 @@ import SearchForm from './components/SearchForm'
 import NewWordCard from './components/NewWordCard'
 import KnownWordCard from './components/KnownWordCard'
 import RecentWords from './components/RecentWords'
+import WordsPage from './components/WordsPage'
+import { initialWords } from './data/initialWords'
 import { fakeDictionary } from './data/fakeDictionary'
 import { normalizeTerm } from './utils/normalize'
 import './App.css'
-
-// Carnet de départ EN DUR (étape 1). Il sert à tester la détection de doublon :
-// tape "reckless" et l'appli doit dire "Déjà dans ton carnet".
-const initialWords = [
-  {
-    term: 'reckless',
-    termNormalized: 'reckless', // version "propre" utilisée pour comparer
-    translation: 'imprudent, téméraire',
-    partOfSpeech: 'adjectif',
-    phonetic: '/ˈrek.ləs/',
-    example: 'It was reckless to fight him alone.',
-    sourceTitle: '',
-    sourceChapter: '',
-    seenCount: 3, // compteur "vu X fois" (F6)
-    createdAt: '2026-09-12',
-  },
-]
 
 // App = le "chef d'orchestre" : c'est ici qu'on garde les données
 // et qu'on décide quoi afficher.
@@ -36,6 +21,8 @@ export default function App() {
   //   { type: 'known', word }    -> mot déjà enregistré
   //   { type: 'new', draft }     -> nouveau mot à compléter puis enregistrer
   const [result, setResult] = useState(null)
+  // screen : l'écran affiché. 'add' = Ajouter un mot, 'list' = Mes mots.
+  const [screen, setScreen] = useState('add')
 
   // Appelée par SearchForm quand on valide un mot.
   function handleSearch(rawTerm) {
@@ -86,25 +73,32 @@ export default function App() {
   return (
     <div className="app">
       <Header />
-      <main className="main">
-        {/* Zone de travail : recherche + fiche. Sur ordinateur, "Derniers mots" se place à sa droite. */}
-        <div className="workspace">
-          <SearchForm onSearch={handleSearch} />
+      {/* Selon l'écran choisi dans la navigation, on affiche une page ou l'autre */}
+      {screen === 'add' ? (
+        <main className="main">
+          {/* Zone de travail : recherche + fiche. Sur ordinateur, "Derniers mots" se place à sa droite. */}
+          <div className="workspace">
+            <SearchForm onSearch={handleSearch} />
 
-          {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
-          {result?.type === 'known' && <KnownWordCard word={result.word} />}
-          {result?.type === 'new' && (
-            <NewWordCard
-              draft={result.draft}
-              onChange={(draft) => setResult({ type: 'new', draft })}
-              onSave={handleSave}
-            />
-          )}
-        </div>
+            {/* Affichage conditionnel : selon `result`, on montre l'une ou l'autre fiche */}
+            {result?.type === 'known' && <KnownWordCard word={result.word} />}
+            {result?.type === 'new' && (
+              <NewWordCard
+                draft={result.draft}
+                onChange={(draft) => setResult({ type: 'new', draft })}
+                onSave={handleSave}
+              />
+            )}
+          </div>
 
-        <RecentWords words={words} />
-      </main>
-      <BottomNav />
+          <RecentWords words={words} onSeeAll={() => setScreen('list')} />
+        </main>
+      ) : (
+        <main className="main main--single">
+          <WordsPage words={words} />
+        </main>
+      )}
+      <BottomNav screen={screen} onNavigate={setScreen} />
     </div>
   )
 }

@@ -34,8 +34,9 @@
 /* ===== Barre de navigation ===== */
 .nav {
   display: flex;
+  gap: 3px; /* l'espace laisse voir le fond noir : c'est le trait de séparation */
   border-top: 3px solid var(--ink);
-  background: var(--white);
+  background: var(--ink);
   position: sticky; /* reste collée en bas de l'écran */
   bottom: 0;
 }
@@ -54,10 +55,6 @@
 }
 .nav-item--active {
   background: var(--yellow);
-  border-right: 3px solid var(--ink);
-}
-.nav-item:disabled {
-  opacity: 0.5;
 }
 
 /* ===== Boutons ===== */
@@ -258,6 +255,71 @@
   gap: 14px;
 }
 
+/* ===== Écran "Mes mots" ===== */
+.words-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.words-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.words-title {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 400;
+}
+.words-count {
+  font-size: 14px;
+  font-weight: 600;
+}
+.words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.word-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.word-term {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+}
+.word-translation {
+  display: block;
+  font-size: 14px;
+  color: var(--grey);
+}
+
+/* Bouton qui ressemble à un lien (ex. "Voir tous mes mots →") */
+.link-button {
+  padding: 4px 0;
+  font: 700 14px var(--font-text);
+  color: var(--ink);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.link-button:hover {
+  color: var(--blue);
+}
+
 /* ===== "Derniers mots" : caché sur téléphone, affiché sur ordinateur ===== */
 .recent {
   display: none;
@@ -333,7 +395,7 @@
     align-content: start;
     gap: 10px;
     padding: 28px 20px;
-    background: var(--yellow);
+    background: var(--yellow); /* le fond noir du mobile redevient jaune */
     border-top: 0;
     border-right: 3px solid var(--ink);
     position: static; /* plus besoin d'être collée en bas */
@@ -361,6 +423,10 @@
     align-items: start;
     gap: 32px;
     padding: 36px 40px;
+  }
+  /* Écran "Mes mots" : une seule colonne, pas de "Derniers mots" */
+  .main--single {
+    display: block;
   }
   .workspace {
     display: flex;
