@@ -69,10 +69,34 @@ Cette commande démarre le front (http://localhost:5173) et le serveur (http://l
 | Commande | Description |
 | --- | --- |
 | `npm run dev:all` | Lance le front et le serveur |
+| `npm run build:render` | Construit le site et prépare la base (utilisé par Render) |
+| `npm start` | Lance le serveur en production (sert aussi le site construit) |
 | `npm run dev` | Lance seulement le front |
 | `npm run build` | Génère la version de production du front |
 | `npm run lint` | Vérifie le code avec Oxlint |
 | `npm test --prefix server` | Lance les tests du serveur (la base doit tourner) |
+
+## Mise en ligne (Render + Neon)
+
+Le site et l'API tournent dans **un seul service** [Render](https://render.com) ; la base PostgreSQL est chez [Neon](https://neon.com). Les deux ont une offre gratuite permanente. Le fichier `render.yaml` décrit tout le réglage du service.
+
+**1. La base de données (Neon)**
+1. Créez un compte sur Neon, puis un projet. Choisissez la région **AWS Europe (Frankfurt)**.
+2. Copiez l'**adresse de connexion** (`postgresql://…`). Dans la fenêtre « Connect », **désactivez « Connection pooling »** pour obtenir l'adresse *directe* (celle sans `-pooler` dans le nom du serveur).
+
+**2. Le service (Render)**
+1. Créez un compte sur Render et connectez-le à GitHub.
+2. **New → Blueprint**, choisissez ce dépôt : Render lit `render.yaml`.
+3. Render demande deux valeurs : `DATABASE_URL` (l'adresse copiée à l'étape 1) et `DEEPL_API_KEY` (votre clé DeepL, ou laissez vide).
+4. Lancez la création. La première construction prend quelques minutes. L'adresse du site s'affiche ensuite (`https://vocab-tracker-….onrender.com`).
+
+**3. Votre compte, puis fermer les inscriptions**
+1. Ouvrez le site, cliquez sur « En créer un » et créez **votre** compte.
+2. Dans Render : le service → **Environment** → passez `ALLOW_REGISTRATION` à `false` → enregistrez. Plus personne d'autre ne peut créer de compte.
+
+**Mises à jour :** chaque `git push` sur `main` redéploie le site automatiquement.
+
+**À savoir sur l'offre gratuite :** le service **s'endort après 15 minutes** sans visite et met environ **1 minute** à se réveiller (la première page est lente, ensuite tout est rapide). La base Neon se met aussi en veille après 5 minutes, avec un réveil bref. Les conditions des offres gratuites changent : vérifiez-les sur les sites au moment de vous inscrire.
 
 ## Structure
 

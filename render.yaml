@@ -1,0 +1,34 @@
+# Configuration de l'hébergement sur Render (un "Blueprint").
+# Render lit ce fichier et crée tout seul le service avec ces réglages.
+# Un SEUL service : il sert à la fois le site (React) et l'API (Express). La base de données est ailleurs (Neon).
+services:
+  - name: vocab-tracker
+    type: web
+    runtime: node
+    plan: free
+    region: frankfurt # le datacenter le plus proche de la France. À choisir identique à celui de la base Neon.
+
+    # Étape de construction, lancée à chaque mise à jour :
+    # installe tout (y compris les outils de construction), fabrique le site, puis crée/met à jour les tables.
+    buildCommand: npm run build:render
+    # Commande de démarrage : lance le serveur, qui sert aussi le site fabriqué.
+    startCommand: npm start
+    # Render appelle cette adresse pour savoir si le serveur est vivant.
+    healthCheckPath: /api/health
+
+    envVars:
+      # "production" : active le mode production (voir server/src/app.js)
+      - key: NODE_ENV
+        value: production
+      # Adresse de la base Neon. SECRET : Render la demande lors de la création, elle n'est jamais dans ce fichier.
+      - key: DATABASE_URL
+        sync: false
+      # Secret qui signe les sessions : Render en génère un aléatoire et solide (256 bits) à la création.
+      - key: JWT_SECRET
+        generateValue: true
+      # Clé DeepL (traduction). SECRET, optionnelle : sans elle, les traductions sont à écrire à la main.
+      - key: DEEPL_API_KEY
+        sync: false
+      # Les inscriptions sont ouvertes au début, pour créer votre compte. Passez à "false" ensuite (voir README).
+      - key: ALLOW_REGISTRATION
+        value: "true"

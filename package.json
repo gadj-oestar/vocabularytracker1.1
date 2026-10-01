@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "dev:all": "concurrently -k -n front,api -c yellow,blue \"npm run dev\" \"npm run dev --prefix server\"",
-    "install:all": "npm install && npm install --prefix server"
+    "install:all": "npm install && npm install --prefix server",
+    "build:render": "npm install --include=dev && npm install --include=dev --prefix server && npm run build && npm run db:setup --prefix server",
+    "start": "npm start --prefix server"
   },
   "dependencies": {
     "react": "^19.2.8",

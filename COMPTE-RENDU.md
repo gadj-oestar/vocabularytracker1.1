@@ -611,3 +611,80 @@ L'ancienne icône par défaut de Vite (`public/favicon.svg`) a été supprimée 
 ## Pour changer le nom affiché
 
 Ouvrez `src/components/Signature.jsx` et modifiez `Gad T.` dans la ligne `Fait par <strong>Gad T.</strong>`. Le nom vient de votre maquette ; changez-le si vous préférez un autre.
+
+---
+
+# Étape 7 du plan : la mise en ligne
+
+L'appli tourne sur votre PC. La mettre **en ligne**, c'est la faire tourner sur un ordinateur de quelqu'un d'autre, allumé en permanence, accessible depuis votre téléphone n'importe où. Cette étape prépare tout ce qui ne dépend pas de vos comptes ; il vous reste à créer les comptes Neon et Render (voir le guide dans le README).
+
+## Le plan : un seul service + une base
+
+```
+Téléphone / PC  --HTTPS-->  Render : UN service Node (Express)  --SQL-->  Neon : PostgreSQL
+                            sert le SITE (React) et l'API
+```
+
+**Pourquoi un seul service, et pas le site d'un côté et l'API de l'autre ?** C'est une affaire de **cookie**. Notre cookie de connexion est `SameSite=Lax` : le navigateur ne l'envoie pas quand une requête vient d'un *autre site*. Si le site était sur `vercel.app` et l'API sur `onrender.com`, ce serait deux sites différents : la connexion échouerait ou demanderait des réglages dangereux. Avec **un seul domaine**, tout est « du même site » et la sécurité du cookie reste entière. Bonus : un seul programme à surveiller, et pas de CORS.
+
+**Pourquoi Neon pour la base ?** La base PostgreSQL gratuite de Render **expire au bout de 30 jours** : inutile pour un carnet qu'on veut garder. Neon est gratuit en permanence, sans carte bancaire (vérifié sur leurs pages le jour de l'écriture ; ça peut changer).
+
+## Ce qui a été ajouté
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `server/src/app.js` | En production, sert aussi le site, avec les protections de sécurité. |
+| `render.yaml` | Décrit à Render comment construire et lancer le service, et quelles variables il lui faut. |
+| `.node-version` | Impose Node 24 (la même version que sur votre PC). |
+| `package.json` (`build:render`, `start`) | Les deux commandes que Render exécute. |
+| `server/test/production.test.js` | Teste le mode production sans internet ni base. |
+
+## Les notions à retenir
+
+**`NODE_ENV=production`** — Un interrupteur que les hébergeurs allument. Il règle plusieurs choses d'un coup : le serveur sert le site, le cookie devient `Secure` (envoyé uniquement en HTTPS), le CORS est coupé.
+
+**`npm run build`** — Fabrique le dossier `dist/` : une version du site **compressée et optimisée**, sans le code source. C'est ce dossier que le serveur envoie aux visiteurs. Les fichiers de `dist/assets/` ont un nom qui change à chaque modification (`index-Cz76A-Qt.js`) : le navigateur peut donc les garder **un an** sans jamais afficher une vieille version. `index.html`, lui, n'est **jamais** gardé (`no-cache`) : c'est lui qui désigne les bons fichiers.
+
+**Le « repli » (fallback) vers `index.html`** — Votre site est une seule page ; React affiche ensuite le bon écran. Si quelqu'un recharge ou ouvre un lien direct comme `/mes-mots`, le serveur n'a pas de fichier de ce nom : il renvoie `index.html`, et React fait le reste. Les adresses `/api/...` sont exclues : une API inconnue doit répondre une erreur JSON, pas la page du site.
+
+**`trust proxy`** — En ligne, le serveur est derrière un « proxy » (un intermédiaire de l'hébergeur qui gère le HTTPS). Sans ce réglage, **tous les visiteurs auraient la même adresse IP** aux yeux du serveur, et la limite « 10 échecs de connexion » les bloquerait *tous ensemble*. On lui fait confiance pour UN seul intermédiaire, et **seulement en production** : sur votre PC, faire confiance à cet en-tête permettrait à n'importe qui de falsifier son adresse IP.
+
+**Content-Security-Policy (helmet)** — Une **liste blanche** envoyée au navigateur : « cette page n'a le droit de charger que ceci ». Même si un attaquant parvenait à glisser un script dans la page, le navigateur refuserait de l'exécuter ou d'envoyer des données ailleurs. Notre liste : nos propres scripts et styles (aucun script en ligne), les polices Google Fonts, nos images, et des connexions **uniquement vers notre propre API**. `frame-ancestors 'none'` interdit d'afficher notre site dans le cadre d'un autre (« clickjacking »). Le code n'utilise ni style en ligne ni `innerHTML`, ce qui permet cette politique stricte.
+
+**`ALLOW_REGISTRATION=false`** — Un site public laisse n'importe qui créer un compte. Pour un carnet personnel, on **ferme les inscriptions** une fois son propre compte créé : le serveur répond 403 « Les inscriptions sont fermées », et l'écran de connexion masque « Créer un compte » (via `GET /api/auth/config`). C'est aussi une protection de votre quota DeepL : seuls les comptes existants peuvent traduire.
+
+**`generateValue: true`** (dans `render.yaml`) — Render fabrique lui-même le `JWT_SECRET` : aléatoire, 256 bits. Vous n'avez pas à l'inventer, et il n'apparaît jamais dans le dépôt.
+
+**`sync: false`** — Pour les vrais secrets (`DATABASE_URL`, `DEEPL_API_KEY`) : le fichier dit seulement « cette variable existe », et Render **demande la valeur** à la création. Elle n'est jamais écrite dans le dépôt GitHub.
+
+**`npm install --include=dev`** — Avec `NODE_ENV=production`, npm n'installe pas les outils de développement, or `vite` (qui fabrique le site) et `prisma` (qui crée les tables) en font partie. Sans ce drapeau, la construction échouerait sur l'hébergeur. Je l'ai testé en local avec `NODE_ENV=production`.
+
+## Ce qui a été vérifié (et ce qui ne l'a pas été)
+
+| Vérifié | Comment |
+| --- | --- |
+| Le serveur sert le site, les liens directs, le cache | 8 tests automatiques + essai réel dans le navigateur |
+| La politique de sécurité ne bloque rien | Le site tourne en production locale : polices, logo, connexion, recherche, traduction ; aucune violation en console |
+| Le cookie `Secure` fonctionne | Connexion et session conservée au rechargement, en mode production |
+| La construction fonctionne comme sur Render | `build:render` lancée en local avec `NODE_ENV=production` : code de sortie 0 |
+| Le fichier `render.yaml` | Écrit d'après la documentation de Render (champs vérifiés) |
+
+| **Pas** encore vérifié | Pourquoi |
+| --- | --- |
+| Le déploiement réel sur Render + Neon | Il demande vos comptes. Le premier déploiement dira s'il manque un détail. |
+| La connexion à Neon (SSL) | L'adresse Neon contient `sslmode=require` ; la bibliothèque `pg` la gère, mais je n'ai pas pu l'essayer sans votre base. |
+| L'affichage sur un vrai téléphone | À faire par vous (étape finale du plan : « test sur téléphone pendant une vraie lecture »). |
+
+## Le jour du déploiement : ce qui peut surprendre
+
+- **Le premier chargement est lent** (environ 1 minute) quand le service dormait. C'est normal avec l'offre gratuite.
+- **Votre base en ligne est vide.** Elle ne reprend pas les mots de votre PC. Pour les quelques mots déjà saisis, le plus simple est de les ressaisir. L'export / import est prévu en V3.
+- **Un `git push` redéploie le site** automatiquement. Si une mise à jour contient une erreur, le déploiement échoue et Render garde l'ancienne version en ligne.
+- **Les secrets** (clé DeepL, adresse de la base) se changent dans Render → Environment, pas dans le code.
+
+## Ce qui n'est pas encore fait
+
+- **Créer les comptes Neon et Render et déployer** (guide dans le README).
+- **Le test sur téléphone** pendant une vraie lecture.
+- Le champ **« Phrase de la bulle »** de la maquette (prévu côté base et serveur, pas encore dans les formulaires).
+- **La réinitialisation du mot de passe** (pas d'envoi d'e-mail pour l'instant).
