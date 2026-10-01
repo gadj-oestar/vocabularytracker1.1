@@ -1,3 +1,5 @@
+import ExampleFields from "./ExampleFields";
+
 // Fiche d'un mot NOUVEAU : tout est modifiable avant d'enregistrer.
 // Règle du cahier des charges : la traduction de l'API n'est qu'une proposition,
 // "ce que tu enregistres fait foi".
@@ -8,7 +10,8 @@ const unavailableMessages = {
 };
 
 // `unavailable` = la liste de ce que le serveur n'a pas pu obtenir (ex. ["translation"]).
-export default function NewWordCard({ draft, onChange, onSave, unavailable = [] }) {
+// `onTranslate` = fonction donnée par App pour traduire l'exemple (bouton "Traduire").
+export default function NewWordCard({ draft, onChange, onSave, onTranslate, unavailable = [] }) {
   // Petite fonction qui fabrique un "onChange" pour un champ donné (ex. "translation").
   // Elle renvoie une nouvelle version du brouillon avec ce seul champ modifié.
   const edit = (field) => (event) =>
@@ -46,10 +49,13 @@ export default function NewWordCard({ draft, onChange, onSave, unavailable = [] 
           />
         </label>
 
-        <label className="field">
-          <span className="field-label">Exemple</span>
-          <input type="text" value={draft.example} onChange={edit("example")} />
-        </label>
+        {/* L'exemple en anglais ET sa traduction française, avec le bouton "Traduire" */}
+        <ExampleFields
+          example={draft.example}
+          exampleTranslation={draft.exampleTranslation ?? ""}
+          onChange={(field, value) => onChange({ ...draft, [field]: value })}
+          onTranslate={onTranslate}
+        />
       </div>
 
       <div className="card-side">

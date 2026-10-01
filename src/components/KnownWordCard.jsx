@@ -32,7 +32,9 @@ export default function KnownWordCard({ word, showBanner = true, children }) {
         </div>
         <p className="card-translation">{word.translation}</p>
         {word.definition && <p className="card-definition">{word.definition}</p>}
-        <p className="card-example">"{word.example}"</p>
+        {/* L'exemple en anglais, puis sa traduction en français juste dessous (chacun seulement s'il existe) */}
+        {word.example && <p className="card-example">"{word.example}"</p>}
+        {word.exampleTranslation && <p className="card-example-fr">{word.exampleTranslation}</p>}
 
         {/* "Vu dans" : seulement si un titre de manhwa a été renseigné (champ optionnel).
             `&&` : si la condition est fausse, React n'affiche rien du tout. */}

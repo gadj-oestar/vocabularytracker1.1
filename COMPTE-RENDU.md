@@ -506,3 +506,68 @@ Le même composant sert aux deux : c'est le CSS (`@media`) qui change la présen
 - **Réinitialisation du mot de passe** : pas d'envoi d'e-mail pour l'instant. Un mot de passe oublié ne se récupère pas.
 - **Fermeture des inscriptions** : tout le monde peut créer un compte. Pour un carnet strictement personnel, on pourra bloquer les inscriptions après la création du vôtre.
 - **Tester avec la vraie clé DeepL** : le code est testé avec un faux DeepL, pas encore contre le vrai service.
+
+---
+
+# Traduire aussi les exemples en français
+
+Avant : un exemple comme « It was reckless to fight him alone. » s'affichait sans traduction. Maintenant : l'exemple a **sa traduction française**, remplie automatiquement quand on cherche un mot, et on peut la refaire à la demande avec un bouton **Traduire**.
+
+## Comment ça marche
+
+```
+Tu cherches "grudge"  -->  le dictionnaire donne l'exemple anglais
+                      -->  le serveur le traduit avec DeepL  -->  les deux s'affichent, modifiables
+Tu tapes TA phrase    -->  bouton "Traduire"  -->  POST /api/translate  -->  DeepL  -->  le champ français se remplit
+```
+
+## Ce qui a changé
+
+| Où | Quoi | Rôle en une phrase |
+| --- | --- | --- |
+| Base de données | colonne `example_translation` (migration `add_example_translation`) | Garde la traduction de l'exemple avec le mot. Les mots déjà enregistrés l'ont vide, rien n'est perdu. |
+| `server/src/routes/words.js` | la recherche traduit l'exemple | Après la réponse du dictionnaire, envoie l'exemple à DeepL. |
+| `server/src/routes/translate.js` | route `POST /api/translate` | Traduit un texte à la demande, pour le bouton « Traduire ». |
+| `src/components/ExampleFields.jsx` | les deux champs + le bouton | Regroupe « Exemple », « Exemple en français » et « Traduire », utilisé à deux endroits. |
+| `src/components/KnownWordCard.jsx` | affichage | L'exemple anglais, puis sa traduction juste dessous avec un trait jaune. |
+
+## Les notions et fonctions à retenir
+
+**Migration** — Ajouter une colonne à la base se fait par une *migration* (`prisma migrate dev`) : un fichier SQL qui garde l'historique des changements. Ici : `ALTER TABLE words ADD COLUMN example_translation TEXT NOT NULL DEFAULT ''`. Le `DEFAULT ''` est ce qui rend l'opération sans risque pour les mots existants.
+
+**`prisma generate`** — Après un changement du schéma, il faut aussi *régénérer le client Prisma* (le code qui parle à la base). Sinon le serveur ne connaît pas la nouvelle colonne et répond « erreur 500 ». C'est un piège réel qu'on a rencontré : `migrate dev` ne l'avait pas fait. Le script `npm run db:setup` fait les deux d'un coup, pour une installation neuve.
+
+**Pourquoi l'exemple est traduit « après » le mot** — Le mot et le dictionnaire sont demandés en même temps (`Promise.all`), mais on ne connaît l'exemple qu'une fois le dictionnaire répondu. Si la traduction du *mot* a déjà échoué (clé absente, quota épuisé), on ne tente pas celle de l'exemple : elle échouerait pour la même raison.
+
+**`translateText(text)`** (dans `api.js`) — Envoie un texte au serveur et rend `{ text, available }`. `available: false` n'est **pas** une erreur : la traduction automatique n'est pas possible (clé absente, quota, panne). Le front écrit alors « Traduction indisponible pour le moment : écris-la toi-même. »
+
+**`useId`** (dans `ExampleFields`) — Fabrique un identifiant unique pour relier chaque `<label>` à son champ (`htmlFor` / `id`). Nécessaire parce que ce composant peut apparaître plusieurs fois, et qu'un même `id` ne doit jamais exister deux fois sur une page.
+
+**`canTranslate`** — Le bouton n'est actif que s'il y a un texte à traduire et qu'aucune traduction n'est déjà en cours : pas de double clic, donc pas de quota gaspillé.
+
+**`onChange(champ, valeur)`** — `ExampleFields` ne garde pas le texte lui-même : à chaque frappe il prévient le parent, qui met à jour son brouillon. Le même composant sert donc à la fiche d'un nouveau mot (brouillon dans `App`) et au formulaire de modification (brouillon dans `EditWordForm`).
+
+## Sécurité et quota (la traduction coûte des caractères gratuits)
+
+| Risque | Protection |
+| --- | --- |
+| Quelqu'un vide votre quota en envoyant un énorme texte | Texte limité à **500 caractères**, refusé avant d'appeler DeepL |
+| Une boucle ou un script appelle la route en continu | Limite de **30 traductions par minute** et par adresse IP |
+| Un inconnu utilise votre clé DeepL | La route exige d'être **connecté** (401 sinon) |
+| La clé fuit | Elle reste sur le serveur, jamais renvoyée au front ni écrite dans les journaux |
+| Des données piégées (`{"text": ["a"]}`, un nombre…) | Le type est vérifié : refusé (400) |
+
+**Combien ça consomme ?** Une phrase d'exemple fait environ 50 à 100 caractères, en plus du mot. Avec ce que DeepL accorde en gratuit (à vérifier sur votre compte, ça change), il y a de la marge pour un usage personnel, mais plus qu'avec les mots seuls.
+
+## Comment tester
+
+1. Connectez-vous et cherchez un mot nouveau, par exemple `grudge` : les champs **Exemple** et **Exemple en français** sont remplis.
+2. Enregistrez, ouvrez la fiche : l'exemple anglais, puis le français dessous avec un trait jaune.
+3. **Modifier**, tapez votre propre phrase dans « Exemple », cliquez **Traduire** : le champ français se remplit.
+4. Videz l'exemple : le bouton se grise (rien à traduire).
+5. Pour voir le cas sans clé : retirez la clé de `server/.env` et relancez. Les champs restent vides, avec le message « Traduction automatique indisponible », et tout le reste fonctionne.
+
+## Ce qui n'est pas encore fait
+
+- Les mots enregistrés **avant** cette mise à jour n'ont pas de traduction d'exemple. Pour chacun : **Modifier**, puis **Traduire**.
+- Le champ **« Phrase de la bulle »** de la maquette (prévu côté base et serveur, pas encore dans les formulaires).

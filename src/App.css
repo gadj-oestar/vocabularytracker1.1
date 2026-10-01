@@ -306,6 +306,16 @@
   line-height: 1.45;
 }
 
+/* Traduction française de l'exemple : sous l'exemple anglais, avec un trait jaune à gauche pour les relier */
+.card-example-fr {
+  margin: -6px 0 0;
+  padding-left: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--grey);
+  border-left: 4px solid var(--yellow);
+}
+
 /* Définition anglaise du dictionnaire : plus discrète que la traduction */
 .card-definition {
   margin: 0;
@@ -400,6 +410,37 @@
   border: 2px solid var(--ink);
   border-radius: 10px;
 }
+/* Les phrases d'exemple sont des textarea : même apparence que les autres champs */
+.field textarea {
+  padding: 10px 12px;
+  font: 500 15px/1.4 var(--font-text);
+  resize: vertical; /* on peut agrandir la zone vers le bas, pas sur les côtés */
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+/* Une ligne avec le libellé à gauche et un petit bouton à droite (ex. "Exemple en français" + "Traduire") */
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.btn-mini {
+  height: 28px;
+  padding: 0 10px;
+  font: 700 12px var(--font-text);
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+}
+.btn-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Bloc "Contexte manhwa". Le fieldset ne garde que la bordure en pointillés ;
    la disposition des champs est faite par .context-row (un simple div, fiable). */
 .context {

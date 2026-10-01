@@ -65,6 +65,7 @@ function toApi(word) {
     phonetic: word.phonetic,
     definition: word.definition,
     example: word.example,
+    exampleTranslation: word.exampleTranslation,
     sourceTitle: word.sourceTitle,
     sourceChapter: word.sourceChapter,
     sourceSentence: word.sourceSentence,
@@ -126,9 +127,22 @@ export async function createWord(draft) {
 
 // Modifie un mot existant (le mot lui-même ne change jamais, seulement ses détails)
 export async function updateWord(id, word) {
-  const { translation, example, sourceTitle, sourceChapter } = toApi(word)
-  const updated = await request('PATCH', `/words/${id}`, { translation, example, sourceTitle, sourceChapter })
+  const { translation, example, exampleTranslation, sourceTitle, sourceChapter } = toApi(word)
+  const updated = await request('PATCH', `/words/${id}`, {
+    translation,
+    example,
+    exampleTranslation,
+    sourceTitle,
+    sourceChapter,
+  })
   return fromApi(updated)
+}
+
+// Traduit un texte anglais en français (bouton "Traduire" à côté de l'exemple).
+// Renvoie { text, available } : available vaut false si la traduction automatique n'est pas possible
+// (clé DeepL absente, quota épuisé, panne). Ce n'est pas une erreur : on l'annonce, c'est tout.
+export async function translateText(text) {
+  return request('POST', '/translate', { text })
 }
 
 // Supprime un mot

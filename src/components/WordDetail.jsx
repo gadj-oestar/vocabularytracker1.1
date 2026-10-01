@@ -5,7 +5,8 @@ import EditWordForm from './EditWordForm'
 // Écran "fiche d'un mot", ouvert en cliquant sur un mot de la liste.
 // `word` = le mot à afficher, `onBack` = retour à la liste,
 // `onUpdate` / `onDelete` = fonctions données par App qui modifient ou suppriment vraiment le mot.
-export default function WordDetail({ word, onBack, onUpdate, onDelete }) {
+// `onTranslate` = traduction de l'exemple (donnée par App, transmise au formulaire de modification).
+export default function WordDetail({ word, onBack, onUpdate, onDelete, onTranslate }) {
   // confirming : est-on en train de demander "Tu es sûr ?" avant de supprimer ?
   const [confirming, setConfirming] = useState(false)
   // editing : est-on en train de modifier le mot ? (la fiche est remplacée par un formulaire)
@@ -25,7 +26,12 @@ export default function WordDetail({ word, onBack, onUpdate, onDelete }) {
       </button>
 
       {editing ? (
-        <EditWordForm word={word} onSave={handleSaveEdit} onCancel={() => setEditing(false)} />
+        <EditWordForm
+          word={word}
+          onSave={handleSaveEdit}
+          onCancel={() => setEditing(false)}
+          onTranslate={onTranslate}
+        />
       ) : (
         // On réutilise la même fiche que pour un doublon, mais sans le bandeau bleu
         // (showBanner={false}) : ici on ne vient pas de taper ce mot, on l'ouvre.

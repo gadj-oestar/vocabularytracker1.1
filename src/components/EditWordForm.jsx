@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import ExampleFields from './ExampleFields'
 
 // Formulaire pour MODIFIER un mot déjà enregistré (F9 du cahier des charges).
 // `word` = le mot à modifier, `onSave(mot)` = enregistre les changements,
-// `onCancel` = referme le formulaire sans rien changer.
-export default function EditWordForm({ word, onSave, onCancel }) {
+// `onCancel` = referme le formulaire sans rien changer,
+// `onTranslate` = fonction donnée par App pour traduire l'exemple (bouton "Traduire").
+export default function EditWordForm({ word, onSave, onCancel, onTranslate }) {
   // draft = une COPIE de travail du mot. On tape dans la copie, et le vrai mot
   // (dans le carnet) ne change que si on clique sur ENREGISTRER. Annuler = on jette la copie.
   const [draft, setDraft] = useState(word)
@@ -26,10 +28,13 @@ export default function EditWordForm({ word, onSave, onCancel }) {
         <input type="text" value={draft.translation} onChange={edit('translation')} />
       </label>
 
-      <label className="field">
-        <span className="field-label">Exemple</span>
-        <input type="text" value={draft.example} onChange={edit('example')} />
-      </label>
+      {/* L'exemple en anglais ET sa traduction française, avec le bouton "Traduire" */}
+      <ExampleFields
+        example={draft.example}
+        exampleTranslation={draft.exampleTranslation ?? ''}
+        onChange={(field, value) => setDraft({ ...draft, [field]: value })}
+        onTranslate={onTranslate}
+      />
 
       <fieldset className="context">
         <legend className="field-label">Contexte manhwa</legend>

@@ -17,6 +17,7 @@ import {
   logout,
   lookupWord,
   register,
+  translateText,
   updateWord,
 } from './api'
 import './App.css'
@@ -294,6 +295,7 @@ export default function App() {
               unavailable={result.unavailable}
               onChange={(draft) => setResult({ ...result, draft })}
               onSave={handleSave}
+              onTranslate={translateText}
             />
           )}
         </div>
@@ -313,6 +315,7 @@ export default function App() {
           onBack={() => handleNavigate('list')}
           onUpdate={handleUpdate}
           onDelete={handleDelete}
+          onTranslate={translateText}
         />
       </main>
     )
