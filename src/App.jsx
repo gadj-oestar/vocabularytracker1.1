@@ -12,6 +12,7 @@ import WordDetail from './components/WordDetail'
 import {
   createWord,
   deleteWord,
+  getAuthConfig,
   getMe,
   listWords,
   login,
@@ -32,6 +33,9 @@ export default function App() {
   //   null       -> personne n'est connecté : on affiche l'écran de connexion
   //   { id, email } -> connecté : on affiche l'appli
   const [user, setUser] = useState(undefined)
+  // registrationOpen : peut-on créer un compte ? Le serveur peut fermer les inscriptions (carnet personnel).
+  // Ouvert par défaut : seul l'écran de connexion en tient compte.
+  const [registrationOpen, setRegistrationOpen] = useState(true)
   // words : le carnet (liste de tous les mots enregistrés), copie locale de ce que dit le serveur
   const [words, setWords] = useState([])
   // loading : true tant que la vérification de session et le premier chargement ne sont pas terminés
@@ -60,7 +64,9 @@ export default function App() {
   // (Le cookie de session est envoyé automatiquement par le navigateur : on n'a rien à lui donner.)
   async function startSession() {
     const me = await getMe()
-    return { me, loaded: me ? await listWords() : [] }
+    // Si personne n'est connecté, on demande aussi si les inscriptions sont ouvertes (pour l'écran de connexion)
+    const open = me ? true : (await getAuthConfig()).registrationOpen
+    return { me, open, loaded: me ? await listWords() : [] }
   }
 
   // useEffect : "fais ceci APRÈS l'affichage". Avec [] en second argument, ça ne s'exécute qu'une fois, au démarrage.
@@ -70,9 +76,10 @@ export default function App() {
     // (React en mode développement monte l'appli deux fois : sans ça, on traiterait deux réponses).
     let cancelled = false
     startSession()
-      .then(({ me, loaded }) => {
+      .then(({ me, open, loaded }) => {
         if (cancelled) return
         setUser(me)
+        setRegistrationOpen(open)
         setWords(loaded)
       })
       .catch((e) => {
@@ -95,8 +102,9 @@ export default function App() {
     setError(null)
     setLoadFailed(false)
     try {
-      const { me, loaded } = await startSession()
+      const { me, open, loaded } = await startSession()
       setUser(me)
+      setRegistrationOpen(open)
       setWords(loaded)
     } catch (e) {
       setError(e.message)
@@ -273,7 +281,7 @@ export default function App() {
         <Header />
         <main className="main main--single">
           {errorBanner}
-          <AuthPage onSubmit={handleAuth} />
+          <AuthPage onSubmit={handleAuth} registrationOpen={registrationOpen} />
         </main>
         <Signature variant="page" />
       </div>

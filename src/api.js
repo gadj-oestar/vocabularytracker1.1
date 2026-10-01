@@ -88,6 +88,12 @@ export async function getMe() {
   }
 }
 
+// Les inscriptions sont-elles ouvertes ? Renvoie { registrationOpen: true | false }.
+// L'écran de connexion s'en sert pour proposer (ou non) "Créer un compte".
+export async function getAuthConfig() {
+  return request('GET', '/auth/config')
+}
+
 // Crée un compte (on est connecté directement après)
 export async function register(email, password) {
   return (await request('POST', '/auth/register', { email, password })).user

@@ -157,6 +157,31 @@ test('JSON invalide ou données absurdes : erreurs propres, pas de plantage', as
   assert.equal((await call('POST', '/api/auth/register', { email: ['a@b.cd'], password: TEST_PASSWORD })).status, 400)
 })
 
+test('inscriptions fermées (ALLOW_REGISTRATION=false) : /config le dit, créer un compte est refusé, se connecter marche', async () => {
+  // Un compte créé AVANT la fermeture, pour vérifier que la connexion continue de fonctionner
+  const email = testEmail('ferme')
+  assert.equal((await call('POST', '/api/auth/register', { email, password: TEST_PASSWORD })).status, 201)
+  assert.deepEqual((await call('GET', '/api/auth/config')).body, { registrationOpen: true }) // ouvertes par défaut
+
+  const previous = process.env.ALLOW_REGISTRATION
+  process.env.ALLOW_REGISTRATION = 'false'
+  try {
+    assert.deepEqual((await call('GET', '/api/auth/config')).body, { registrationOpen: false })
+    const refused = await call('POST', '/api/auth/register', { email: testEmail('refuse'), password: TEST_PASSWORD })
+    assert.equal(refused.status, 403)
+    assert.equal(refused.body.error, 'Les inscriptions sont fermées.')
+    assert.equal(refused.cookie, undefined) // aucune session accordée
+    // Aucun compte n'a été créé en cachette
+    assert.equal(await prisma.user.count({ where: { email: { contains: '-refuse@' } } }), 0)
+    // Les comptes existants se connectent normalement
+    assert.equal((await call('POST', '/api/auth/login', { email, password: TEST_PASSWORD })).status, 200)
+  } finally {
+    if (previous === undefined) delete process.env.ALLOW_REGISTRATION
+    else process.env.ALLOW_REGISTRATION = previous
+  }
+  assert.deepEqual((await call('GET', '/api/auth/config')).body, { registrationOpen: true }) // réouvertes
+})
+
 // DERNIER test : il épuise volontairement la limite de tentatives de connexion (10 échecs par 15 minutes)
 test('brute force : trop d\'échecs de connexion -> 429, mais une connexion réussie reste possible avant', async () => {
   const email = testEmail('brute')

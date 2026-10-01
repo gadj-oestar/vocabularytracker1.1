@@ -1,4 +1,5 @@
 // Les routes d'authentification :
+//   GET  /api/auth/config    -> les inscriptions sont-elles ouvertes ?
 //   POST /api/auth/register  -> créer un compte (et être connecté)
 //   POST /api/auth/login     -> se connecter
 //   POST /api/auth/logout    -> se déconnecter
@@ -41,7 +42,20 @@ const registerLimiter = rateLimit({
   message: { error: 'Trop de créations de compte. Réessaie plus tard.' },
 })
 
+// Les inscriptions sont-elles ouvertes ? Oui par défaut. Pour un carnet strictement personnel, on les ferme
+// une fois son propre compte créé : on met ALLOW_REGISTRATION=false dans la configuration du serveur.
+// (Lu à chaque appel, pas une fois pour toutes : on peut donc le changer sans toucher au code.)
+const registrationOpen = () => process.env.ALLOW_REGISTRATION !== 'false'
+
+// Le front demande ceci pour savoir s'il doit proposer "Créer un compte" sur l'écran de connexion.
+router.get('/config', (req, res) => {
+  res.json({ registrationOpen: registrationOpen() })
+})
+
 router.post('/register', registerLimiter, async (req, res) => {
+  // 403 = "interdit" : la requête est comprise mais refusée. On le vérifie AVANT tout le reste.
+  if (!registrationOpen()) throw new HttpError(403, 'Les inscriptions sont fermées.')
+
   const email = cleanEmail(req.body?.email)
   const password = cleanPassword(req.body?.password)
 

@@ -3,7 +3,8 @@ import { useState } from 'react'
 // Écran de connexion / création de compte (F1 du cahier des charges : e-mail + mot de passe).
 // `onSubmit(mode, email, password)` = fonction donnée par App qui parle au serveur.
 // Elle renvoie un message d'erreur (texte) si ça a échoué, rien si ça a marché.
-export default function AuthPage({ onSubmit }) {
+// `registrationOpen` = false quand le serveur a fermé les inscriptions : on ne propose alors que la connexion.
+export default function AuthPage({ onSubmit, registrationOpen = true }) {
   // mode : 'login' (se connecter) ou 'register' (créer un compte). Le même formulaire sert aux deux.
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
@@ -14,7 +15,8 @@ export default function AuthPage({ onSubmit }) {
   // par-dessus votre épaule ne doit rien voir tant que vous ne l'avez pas demandé.
   const [showPassword, setShowPassword] = useState(false)
 
-  const isRegister = mode === 'register'
+  // Même si `mode` valait 'register', on reste en connexion quand les inscriptions sont fermées
+  const isRegister = registrationOpen && mode === 'register'
 
   async function handleSubmit(event) {
     event.preventDefault() // pas de rechargement de la page
@@ -134,9 +136,14 @@ export default function AuthPage({ onSubmit }) {
           {busy ? '…' : isRegister ? 'CRÉER MON COMPTE' : 'SE CONNECTER'}
         </button>
 
-        <button className="link-button auth-switch" type="button" onClick={switchMode}>
-          {isRegister ? 'Déjà un compte ? Se connecter' : 'Pas encore de compte ? En créer un'}
-        </button>
+        {/* Le bouton pour passer à "Créer un compte" n'existe que si le serveur accepte les inscriptions */}
+        {registrationOpen ? (
+          <button className="link-button auth-switch" type="button" onClick={switchMode}>
+            {isRegister ? 'Déjà un compte ? Se connecter' : 'Pas encore de compte ? En créer un'}
+          </button>
+        ) : (
+          <p className="auth-intro auth-switch">Les inscriptions sont fermées.</p>
+        )}
       </form>
     </div>
   )
