@@ -37,7 +37,11 @@ before(async () => {
       )
     }
     if (address.includes('deepl.com')) {
-      return Promise.resolve(Response.json({ translations: [{ text: 'mot de test' }] }))
+      // Le faux DeepL répond selon le texte reçu : on peut ainsi vérifier QUE l'exemple est traduit
+      // (et pas seulement le mot), et que le serveur envoie bien le bon texte.
+      const sent = JSON.parse(options.body).text[0]
+      const replies = { 'An example.': 'Un exemple.', 'Hello there.': 'Bonjour.' }
+      return Promise.resolve(Response.json({ translations: [{ text: replies[sent] ?? 'mot de test' }] }))
     }
     return realFetch(url, options)
   }
@@ -69,6 +73,7 @@ test('cycle complet : chercher, créer, doublon, modifier, supprimer', async () 
   assert.equal(r.body.draft.definition, 'A test & more.')
   assert.equal(r.body.draft.example, 'An example.')
   assert.equal(r.body.draft.translation, 'mot de test') // proposition de DeepL (simulé)
+  assert.equal(r.body.draft.exampleTranslation, 'Un exemple.') // l'exemple "An example." est traduit aussi
   assert.deepEqual(r.body.unavailable, [])
 
   // 2. On l'enregistre (le front envoie "42" en texte : le serveur en fait un nombre)
@@ -76,12 +81,14 @@ test('cycle complet : chercher, créer, doublon, modifier, supprimer', async () 
     term: TERM,
     translation: 'essai',
     example: 'A test.',
+    exampleTranslation: 'Un test.',
     sourceTitle: 'Solo Leveling',
     sourceChapter: '42',
   })
   assert.equal(r.status, 201)
   assert.equal(r.body.seenCount, 1)
   assert.equal(r.body.sourceChapter, 42)
+  assert.equal(r.body.exampleTranslation, 'Un test.') // la traduction de l'exemple est bien enregistrée
   const id = r.body.id
 
   // 3. RÈGLE n°2 : la base refuse le doublon, même avec une casse et des espaces différents
@@ -103,7 +110,13 @@ test('cycle complet : chercher, créer, doublon, modifier, supprimer', async () 
   assert.equal(r.status, 200)
   assert.equal(r.body.translation, 'test modifié')
   assert.equal(r.body.example, 'A test.') // inchangé
+  assert.equal(r.body.exampleTranslation, 'Un test.') // inchangée aussi (champ non envoyé)
   assert.equal(r.body.term, TERM) // le mot n'est pas modifiable
+
+  // 6 bis. On modifie la traduction de l'exemple
+  r = await call('PATCH', `/api/words/${id}`, { exampleTranslation: 'Un essai.' })
+  assert.equal(r.body.exampleTranslation, 'Un essai.')
+  assert.equal(r.body.translation, 'test modifié') // le reste n'a pas bougé
 
   // 7. On le supprime, puis il est introuvable
   r = await call('DELETE', `/api/words/${id}`)
@@ -149,6 +162,43 @@ test('isolation : chaque utilisateur ne voit et ne touche que SES mots', async (
   const mine = (await call('GET', '/api/words')).body.find((w) => w.id === idOfA)
   assert.equal(mine.translation, 'mot de A')
   assert.equal(mine.seenCount, 1)
+})
+
+test('traduction à la demande : /api/translate traduit, valide, et protège le quota', async () => {
+  // Traduction normale : le bon texte part chez DeepL, la réponse revient nettoyée
+  let r = await call('POST', '/api/translate', { text: '  Hello there.  ' })
+  assert.equal(r.status, 200)
+  assert.deepEqual(r.body, { text: 'Bonjour.', available: true })
+
+  // Données invalides : refusées AVANT d'appeler DeepL (donc sans consommer de quota)
+  assert.equal((await call('POST', '/api/translate', {})).status, 400)
+  assert.equal((await call('POST', '/api/translate', { text: '   ' })).status, 400)
+  assert.equal((await call('POST', '/api/translate', { text: 42 })).status, 400)
+  assert.equal((await call('POST', '/api/translate', { text: ['a'] })).status, 400)
+  r = await call('POST', '/api/translate', { text: 'a'.repeat(501) })
+  assert.equal(r.status, 400)
+  assert.match(r.body.error, /trop long/)
+
+  // Sans clé DeepL : ce n'est pas une erreur, la réponse dit simplement "indisponible"
+  const key = process.env.DEEPL_API_KEY
+  delete process.env.DEEPL_API_KEY
+  try {
+    r = await call('POST', '/api/translate', { text: 'Hello there.' })
+    assert.equal(r.status, 200)
+    assert.deepEqual(r.body, { text: '', available: false })
+    // Et la recherche d'un mot nouveau le signale aussi, sans planter
+    r = await call('POST', '/api/words/lookup', { term: `${TERM} sans cle` })
+    assert.equal(r.status, 200)
+    assert.equal(r.body.draft.translation, '')
+    assert.equal(r.body.draft.exampleTranslation, '')
+    assert.deepEqual(r.body.unavailable, ['translation'])
+  } finally {
+    process.env.DEEPL_API_KEY = key
+  }
+
+  // Réservée aux utilisateurs connectés (elle consomme le quota)
+  assert.equal((await rawCall(base, 'POST', '/api/translate', { text: 'Hello' })).status, 401)
+  assert.equal((await rawCall(base, 'POST', '/api/translate', { text: 'Hello' }, 'token=bidon')).status, 401)
 })
 
 test('sans session valide : toutes les routes des mots répondent 401', async () => {

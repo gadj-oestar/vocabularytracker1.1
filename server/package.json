@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch-path=./src src/index.js",
     "start": "node src/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "db:setup": "prisma migrate deploy && prisma generate"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

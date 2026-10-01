@@ -23,21 +23,22 @@ model User {
 
 // Table "words" : un mot du carnet.
 model Word {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid // à qui appartient ce mot
-  term           String // le mot tel que saisi ("Give Up")
-  termNormalized String   @map("term_normalized") // le mot "propre" ("give up"), sert à détecter les doublons
-  translation    String   @default("")
-  partOfSpeech   String   @default("") @map("part_of_speech") // nom, verbe, adjectif...
-  phonetic       String   @default("")
-  definition     String   @default("")
-  example        String   @default("")
-  sourceTitle    String?  @map("source_title") // titre du manhwa (optionnel : "?" = peut être vide)
-  sourceChapter  Int?     @map("source_chapter") // chapitre (optionnel)
-  sourceSentence String?  @map("source_sentence") // phrase de la bulle (optionnel)
-  seenCount      Int      @default(1) @map("seen_count") // compteur "vu X fois"
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid // à qui appartient ce mot
+  term               String // le mot tel que saisi ("Give Up")
+  termNormalized     String   @map("term_normalized") // le mot "propre" ("give up"), sert à détecter les doublons
+  translation        String   @default("")
+  partOfSpeech       String   @default("") @map("part_of_speech") // nom, verbe, adjectif...
+  phonetic           String   @default("")
+  definition         String   @default("")
+  example            String   @default("")
+  exampleTranslation String   @default("") @map("example_translation") // traduction française de l'exemple
+  sourceTitle        String?  @map("source_title") // titre du manhwa (optionnel : "?" = peut être vide)
+  sourceChapter      Int?     @map("source_chapter") // chapitre (optionnel)
+  sourceSentence     String?  @map("source_sentence") // phrase de la bulle (optionnel)
+  seenCount          Int      @default(1) @map("seen_count") // compteur "vu X fois"
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

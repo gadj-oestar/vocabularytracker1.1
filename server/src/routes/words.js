@@ -71,6 +71,14 @@ router.post('/lookup', lookupLimiter, async (req, res) => {
     translator.translate(termNormalized),
   ])
 
+  // Puis la traduction de la phrase d'exemple. Elle passe APRÈS : on a besoin que le dictionnaire ait répondu
+  // pour connaître l'exemple. Si la traduction du mot a échoué (clé absente, quota épuisé, panne), celle de
+  // l'exemple échouerait pour la même raison : on ne perd pas de temps à la tenter.
+  let exampleTranslation = { text: '', available: true }
+  if (info.example && translation.available) {
+    exampleTranslation = await translator.translate(info.example)
+  }
+
   res.json({
     status: 'new',
     draft: {
@@ -81,6 +89,7 @@ router.post('/lookup', lookupLimiter, async (req, res) => {
       phonetic: info.phonetic,
       definition: info.definition,
       example: info.example,
+      exampleTranslation: exampleTranslation.text, // l'exemple en français, modifiable lui aussi
       sourceTitle: null,
       sourceChapter: null,
       sourceSentence: null,
@@ -89,7 +98,8 @@ router.post('/lookup', lookupLimiter, async (req, res) => {
     // RÈGLE "échec d'API" : ce n'est pas une erreur, le mot peut quand même être enregistré.
     unavailable: [
       ...(available ? [] : ['dictionary']),
-      ...(translation.available ? [] : ['translation']),
+      // Un seul avertissement "traduction" pour les deux (mot et exemple) : la cause est la même, DeepL
+      ...(translation.available && exampleTranslation.available ? [] : ['translation']),
     ],
   })
 })

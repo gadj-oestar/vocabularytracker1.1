@@ -4,6 +4,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import wordsRouter from './routes/words.js'
 import authRouter from './routes/auth.js'
+import translateRouter from './routes/translate.js'
 import { requireAuth } from './middleware/requireAuth.js'
 import { HttpError } from './utils/wordInput.js'
 
@@ -32,6 +33,9 @@ app.use('/api/auth', authRouter)
 // TOUTES les routes /api/words exigent d'être connecté (requireAuth passe avant) : sans session valide,
 // le serveur répond 401 et n'exécute même pas la route.
 app.use('/api/words', requireAuth, wordsRouter)
+
+// La traduction à la demande consomme le quota DeepL : réservée aux utilisateurs connectés, elle aussi
+app.use('/api/translate', requireAuth, translateRouter)
 
 // Aucune route ne correspond : 404 en JSON
 app.use((req, res) => {

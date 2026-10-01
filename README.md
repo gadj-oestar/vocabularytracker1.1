@@ -37,7 +37,8 @@ psql -U postgres -c "CREATE DATABASE vocabtracker;"
 # 3. Configurer le serveur : copier le modèle, puis remplir DATABASE_URL (mot de passe PostgreSQL)
 cd server
 copy .env.example .env      # macOS / Linux : cp .env.example .env
-npx prisma migrate deploy   # crée les tables
+# (remplir DATABASE_URL et JWT_SECRET dans .env avant la ligne suivante)
+npm run db:setup            # crée les tables ET génère le client Prisma
 cd ..
 ```
 

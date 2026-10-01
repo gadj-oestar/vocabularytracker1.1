@@ -45,6 +45,7 @@ export function cleanWordFields(body, { partial = false } = {}) {
     phonetic: 100,
     definition: 1000,
     example: 1000,
+    exampleTranslation: 1000,
   }
   for (const [field, max] of Object.entries(texts)) {
     if (!partial || body[field] !== undefined) fields[field] = cleanText(body[field], field, max)
