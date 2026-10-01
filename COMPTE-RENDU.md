@@ -571,3 +571,43 @@ Tu tapes TA phrase    -->  bouton "Traduire"  -->  POST /api/translate  -->  Dee
 
 - Les mots enregistrés **avant** cette mise à jour n'ont pas de traduction d'exemple. Pour chacun : **Modifier**, puis **Traduire**.
 - Le champ **« Phrase de la bulle »** de la maquette (prévu côté base et serveur, pas encore dans les formulaires).
+
+---
+
+# La signature de l'auteur (logo GT)
+
+Pour signaler que l'appli est faite par vous, le logo « GT » est affiché dans l'appli avec la mention **« Fait par Gad T. »**, et sert aussi d'icône à l'onglet du navigateur.
+
+## Où il apparaît
+
+| Endroit | Téléphone | Ordinateur |
+| --- | --- | --- |
+| Écran de connexion | En bas de la page | En bas de la page |
+| Appli connectée | En bas du contenu, juste au-dessus de la barre de navigation | Tout en bas du menu jaune de gauche |
+| Onglet du navigateur | Le logo GT (icône) | Le logo GT (icône) |
+
+## Les fichiers
+
+| Fichier | Rôle en une phrase |
+| --- | --- |
+| `src/assets/gt-logo.svg` | Le logo, utilisé dans la signature. |
+| `public/gt-logo.svg` | La même image, utilisée comme icône d'onglet (le dossier `public/` est servi tel quel). |
+| `src/components/Signature.jsx` | Le petit composant « logo + Fait par … ». |
+
+L'ancienne icône par défaut de Vite (`public/favicon.svg`) a été supprimée : elle n'était plus utilisée.
+
+## Les notions à retenir
+
+**`import logo from '../assets/gt-logo.svg'`** — En important l'image, Vite se charge de la publier avec le site et de nous donner son adresse. C'est la bonne façon de procéder pour une image utilisée *dans* un composant.
+
+**`src/` ou `public/` ?** Une image dans `src/` est traitée par Vite (importée, empaquetée). Un fichier dans `public/` est copié tel quel, avec un nom fixe : c'est ce qu'il faut pour l'icône d'onglet, que le navigateur demande directement par son adresse (`/gt-logo.svg`).
+
+**`alt="Logo GT"`** — Le texte lu à la place de l'image par les lecteurs d'écran, ou affiché si l'image ne charge pas.
+
+**`width` et `height` sur l'image** — Ils réservent la place avant que l'image soit chargée, pour que la page ne « saute » pas.
+
+**Une seule signature visible à la fois** — Le composant existe en deux versions (`side` et `page`), et le CSS n'en montre qu'une selon la taille d'écran (`display: none` cache l'autre, y compris aux lecteurs d'écran). Sur l'écran de connexion, qui n'a pas de menu, la version « page » reste visible partout.
+
+## Pour changer le nom affiché
+
+Ouvrez `src/components/Signature.jsx` et modifiez `Gad T.` dans la ligne `Fait par <strong>Gad T.</strong>`. Le nom vient de votre maquette ; changez-le si vous préférez un autre.

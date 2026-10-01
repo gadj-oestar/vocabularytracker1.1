@@ -87,6 +87,32 @@
   display: none;
 }
 
+/* ===== Signature de l'auteur (logo + "Fait par …") ===== */
+.signature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--grey);
+}
+.signature img {
+  flex-shrink: 0;
+  border-radius: 8px; /* le logo est déjà arrondi : ceci évite un coin carré si le fichier change */
+}
+.signature strong {
+  color: var(--ink);
+}
+/* Version "page" : centrée, en bas du contenu (téléphone et écran de connexion) */
+.signature--page {
+  justify-content: center;
+  padding: 14px 20px;
+}
+/* Version "menu" : cachée sur téléphone, elle n'apparaît que dans le menu de gauche sur ordinateur */
+.signature--side {
+  display: none;
+}
+
 /* ===== Écran de connexion / création de compte ===== */
 .auth {
   width: 100%;
@@ -761,6 +787,19 @@
   }
   .logout-label {
     display: inline;
+  }
+
+  /* La signature descend tout en bas du menu jaune (margin-top: auto pousse l'élément vers le bas) */
+  .signature--side {
+    display: flex;
+    margin-top: auto;
+    padding-top: 16px;
+    color: var(--ink);
+  }
+  /* Sur ordinateur, la version "page" est remplacée par celle du menu, SAUF sur l'écran de connexion
+     (qui n'a pas de menu : il garde la signature en bas de page). */
+  .app:not(.app--auth) .signature--page {
+    display: none;
   }
 
   /* Écran de connexion (pas de menu) : on revient à une simple barre jaune en haut, sur une colonne */

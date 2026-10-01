@@ -1,3 +1,5 @@
+import Signature from './Signature'
+
 // Barre de navigation : en bas sur téléphone, à gauche sur ordinateur (le CSS décide).
 // `screen` = l'écran affiché ('add' ou 'list'), `onNavigate` = fonction donnée par App
 // pour changer d'écran.
@@ -22,6 +24,8 @@ export default function BottomNav({ screen, onNavigate }) {
           {item.label}
         </button>
       ))}
+      {/* Sur ordinateur, la signature se place tout en bas du menu de gauche (invisible sur téléphone) */}
+      <Signature variant="side" />
     </nav>
   )
 }

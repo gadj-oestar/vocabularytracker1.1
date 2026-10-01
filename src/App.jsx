@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import BottomNav from './components/BottomNav'
 import AuthPage from './components/AuthPage'
+import Signature from './components/Signature'
 import SearchForm from './components/SearchForm'
 import NewWordCard from './components/NewWordCard'
 import KnownWordCard from './components/KnownWordCard'
@@ -274,6 +275,7 @@ export default function App() {
           {errorBanner}
           <AuthPage onSubmit={handleAuth} />
         </main>
+        <Signature variant="page" />
       </div>
     )
   }
@@ -332,6 +334,9 @@ export default function App() {
     <div className="app">
       <Header user={user} onLogout={handleLogout} />
       {content}
+      {/* Sur téléphone : la signature est en bas de la page, juste au-dessus de la barre de navigation.
+          Sur ordinateur elle est dans le menu de gauche (voir BottomNav), donc celle-ci est cachée par le CSS. */}
+      <Signature variant="page" />
       {/* Pendant qu'on regarde une fiche, l'onglet "Mes mots" reste allumé : la fiche en fait partie */}
       <BottomNav screen={screen === 'detail' ? 'list' : screen} onNavigate={handleNavigate} />
     </div>
